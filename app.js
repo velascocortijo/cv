@@ -411,20 +411,25 @@ function previewDocument(id) {
     const doc = documents.find(d => d.id == id);
     if (!doc) return;
 
-    // En un sistema real, usaríamos la URL de Drive (doc.url_drive)
-    // Para la demo, simulamos el visor con placeholders de Unsplash o iFrames
-    let content = '';
-    if (doc.type === 'pdf') {
-        content = `<iframe src="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" style="width:100%; height:500px; border:none;"></iframe>`;
-    } else {
-        content = `<img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1000" style="width:100%; border-radius:12px;">`;
+    if (!doc.url_drive) {
+        alert("Sin URL de Drive.");
+        return;
     }
+
+    // Extraemos el ID de Drive de la URL
+    const driveIdMatch = doc.url_drive.match(/[-\w]{25,}/);
+    if (!driveIdMatch) {
+        alert("URL de Drive no válida.");
+        return;
+    }
+    const driveId = driveIdMatch[0];
+    const previewUrl = `https://drive.google.com/file/d/${driveId}/preview`;
 
     openModal(`Vista previa: ${doc.name}`, `
         <div style="text-align:center;">
-            ${content}
+            <iframe src="${previewUrl}" style="width:100%; height:500px; border:none; border-radius:12px; background:#f0f0f0;"></iframe>
             <div style="margin-top: 1.5rem;">
-                <button class="btn-primary" onclick="downloadDocument('${doc.id}')">Descargar ahora</button>
+                <a href="${doc.url_drive}" target="_blank" class="btn-primary" style="text-decoration:none; display:inline-block; padding: 10px 20px;">Abrir pantalla completa</a>
             </div>
         </div>
     `);
@@ -432,27 +437,42 @@ function previewDocument(id) {
 
 function downloadDocument(id) {
     const doc = documents.find(d => d.id == id);
-    if (!doc) return;
-
-    // Simulación de descarga
-    alert(`Iniciando descarga de: ${doc.name}\n(En producción esto abriría el enlace de Google Drive)`);
-
-    // Si tuviéramos la URL real:
-    // const link = document.createElement('a');
-    // link.href = doc.url_drive;
-    // link.download = doc.name;
-    // link.click();
+    if (!doc || !doc.url_drive) {
+        alert("No se puede descargar: URL no encontrada.");
+        return;
+    }
+    // Abrimos el enlace de descarga directa de Drive
+    const downloadUrl = doc.url_drive.replace('/view', '/view?export=download');
+    window.open(downloadUrl, '_blank');
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
     const files = event.target.files;
+    if (!files.length) return;
+
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'flex';
+
     for (let file of files) {
-        documents.unshift({
-            id: Date.now(), name: file.name, type: file.type.includes('pdf') ? 'pdf' : 'image', size: (file.size / 1024 / 1024).toFixed(1) + ' MB', date: new Date().toISOString().split('T')[0], year: currentDocYear
-        });
+        try {
+            const driveUrl = await CortijoAPI.uploadToDrive(file);
+            documents.unshift({
+                id: Date.now(),
+                name: file.name,
+                type: file.type.includes('pdf') ? 'pdf' : 'image',
+                size: (file.size / 1024 / 1024).toFixed(1) + ' MB',
+                date: new Date().toISOString().split('T')[0],
+                year: currentDocYear,
+                url_drive: driveUrl
+            });
+            addAudit(`Subió documento: ${file.name}`);
+        } catch (err) {
+            alert(`Error subiendo ${file.name}: ${err.message}`);
+        }
     }
+
+    if (loader) loader.style.display = 'none';
     renderDocuments();
-    alert(`Subido a carpeta ${currentDocYear}`);
 }
 
 // --- EXPENSES LOGIC ---

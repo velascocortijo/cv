@@ -10,7 +10,7 @@ const API = {
      * Obtener listado de gastos con filtros y ordenación
      */
     async getExpenses(filters = {}) {
-        if (!API_URL || API_URL.includes('https://script.google.com/macros/s/AKfycbwHTYtmMDzOaV15jn7NoS36mwpoz7irgVileX6eIThjNySE4ioNH-QwFt5vTdbuyWfN/exec')) {
+        if (!API_URL || API_URL.includes('URL_DE_TU_SCRIPT')) {
             console.warn("API_URL no configurada. Usando datos vacíos.");
             return [];
         }
@@ -133,5 +133,3 @@ const API = {
 };
 
 window.CortijoAPI = API;
-
-
