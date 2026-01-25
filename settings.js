@@ -6,7 +6,7 @@ const CONFIG = {
     AUTHORIZED_EMAILS: [
         "velascocortijo@gmail.com", // Tú (Admin)
         "joseangelgabriel@gmail.com",
-        "primo2@example.com",
+        "rakeltxurobi@gmail.com",
         "primo3@example.com"
         // Añade aquí los correos de tus primos
     ]
@@ -16,6 +16,7 @@ const CONFIG = {
 if (typeof module !== 'undefined') {
     module.exports = CONFIG;
 }
+
 
 
 
