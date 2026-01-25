@@ -1,6 +1,6 @@
 // Configuración Global - Reemplaza con tus IDs reales
 const CONFIG = {
-    GOOGLE_CLIENT_ID: "TU_GOOGLE_CLIENT_ID_AQUI.apps.googleusercontent.com",
+    GOOGLE_CLIENT_ID: "699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com",
     SPREADSHEET_ID: "1L67JCrwGVxGuGghFgoZxM_zIXs0WP6bW4vjsOInvxu0",
     DRIVE_FOLDER_ID: "TU_ID_DE_CARPETA_DRIVE_AQUI",
     AUTHORIZED_EMAILS: [
@@ -16,4 +16,5 @@ const CONFIG = {
 if (typeof module !== 'undefined') {
     module.exports = CONFIG;
 }
+
 
