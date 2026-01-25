@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cortijo Velasco - Gestión</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div id="loader" class="loader-overlay">
+        <div class="loader"></div>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-text">Cortijo <span class="accent">Velasco</span></span>
+            </div>
+            <nav id="main-nav" class="hidden">
+                <button onclick="showSection('calendar')">Calendario</button>
+                <button onclick="showSection('expenses')">Gastos</button>
+                <button onclick="showSection('tasks')">Tareas</button>
+                <button onclick="showSection('documents')">Documentos</button>
+                <button onclick="showSection('profile')">Perfil</button>
+            </nav>
+            <div id="auth-container">
+                <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-callback="handleCredentialResponse"
+                    data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin" data-type="standard"></div>
+            </div>
+            <div id="user-info" class="hidden">
+                <img id="user-avatar" src="" alt="Avatar">
+                <span id="user-name"></span>
+                <button id="logout-btn" onclick="signOut()">Salir</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Login Section -->
+        <section id="login-section" class="hero-section">
+            <div class="hero-content">
+                <h1>Bienvenidos al <br><span class="highlight">Cortijo Velasco</span></h1>
+                <p>Tu refugio familiar, gestionado con amor y eficiencia.</p>
+                <div class="login-card">
+                    <h3>Acceso Restringido</h3>
+                    <p>Por favor, inicia sesión con tu cuenta familiar para continuar.</p>
+                    <div id="demo-auth" style="margin-top: 20px;">
+                        <button class="btn-primary" onclick="window.simulateLogin()" style="width: 100%;">Entrar como
+                            Familiar (Demo)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1000"
+                    alt="Cortijo Velasco">
+            </div>
+        </section>
+
+        <!-- Calendar Section -->
+        <section id="calendar-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Calendario de Reservas</h2>
+                <div class="calendar-nav">
+                    <button class="btn-icon" onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
+                    <h3 id="current-month-display">Mes Año</h3>
+                    <button class="btn-icon" onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <button class="btn-primary" onclick="openBookingModal()">+ Nueva Reserva</button>
+            </div>
+            <div class="calendar-container">
+                <div id="calendar-grid"></div>
+            </div>
+            <div id="calendar-audit" class="audit-log">
+                <h4>Registro de Modificaciones</h4>
+                <ul id="audit-list"></ul>
+            </div>
+        </section>
+
+        <!-- Expenses Section -->
+        <section id="expenses-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Gestión Económica</h2>
+                <div class="balance-cards">
+                    <div class="card balance-card">
+                        <span>Balance Total</span>
+                        <h3 id="total-balance">0.00 €</h3>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="openExpenseModal()">+ Añadir Gasto</button>
+            </div>
+
+            <div class="table-container">
+                <div class="table-actions">
+                    <input type="text" id="expense-search" placeholder="Buscar gastos...">
+                    <button class="btn-secondary" onclick="exportExpenses()">Exportar CSV</button>
+                </div>
+                <table id="expenses-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Usuario</th>
+                            <th>Importe</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-body">
+                        <!-- Content via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tasks Section -->
+        <section id="tasks-section" class="content-section hidden">
+            <div class="section-header">
+                <div class="header-with-filter">
+                    <h2>Tareas <span id="task-year-display">2026</span></h2>
+                    <select id="year-selector" onchange="changeTaskYear(this.value)">
+                        <option value="2024">Carpeta 2024</option>
+                        <option value="2025">Carpeta 2025</option>
+                        <option value="2026" selected>Carpeta 2026</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="openTaskModal()">+ Nueva Tarea</button>
+            </div>
+
+            <div class="kanban-board">
+                <div class="kanban-column" id="col-waiting">
+                    <div class="column-header">
+                        <h3>En Espera</h3>
+                        <span class="count" id="count-waiting">0</span>
+                    </div>
+                    <div class="task-list" id="list-waiting"></div>
+                </div>
+
+                <div class="kanban-column" id="col-running">
+                    <div class="column-header">
+                        <h3>En Ejecución</h3>
+                        <span class="count" id="count-running">0</span>
+                    </div>
+                    <div class="task-list" id="list-running"></div>
+                </div>
+
+                <div class="kanban-column" id="col-completed">
+                    <div class="column-header">
+                        <h3>Completado</h3>
+                        <span class="count" id="count-completed">0</span>
+                    </div>
+                    <div class="task-list" id="list-completed"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents-section" class="content-section hidden">
+            <div class="section-header">
+                <div class="header-with-filter">
+                    <h2>Documentos Internos <span id="doc-year-display">2026</span></h2>
+                    <select id="doc-year-selector" onchange="changeDocYear(this.value)">
+                        <option value="2024">Carpeta 2024</option>
+                        <option value="2025">Carpeta 2025</option>
+                        <option value="2026" selected>Carpeta 2026</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="document.getElementById('file-upload').click()">Subir
+                    Archivo</button>
+                <input type="file" id="file-upload" class="hidden" multiple onchange="handleFileUpload(event)">
+            </div>
+            <div class="document-grid" id="document-list">
+                <!-- Content via JS -->
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Mi Perfil</h2>
+            </div>
+            <div class="profile-card">
+                <div class="profile-header">
+                    <img id="profile-avatar" src="" alt="Avatar Large">
+                    <div class="profile-info">
+                        <h3 id="profile-name"></h3>
+                        <p id="profile-email"></p>
+                        <span id="profile-role" class="badge"></span>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <!-- Stats summary -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-container" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Form content -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Cortijo Velasco. Exclusivo para la familia.</p>
+    </footer>
+
+    <script src="api.js"></script>
+    <script src="settings.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
