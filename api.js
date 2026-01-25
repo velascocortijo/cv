@@ -3,7 +3,7 @@
  * Gestiona la comunicación con Google Apps Script.
  */
 
-const API_URL = 'URL_DE_TU_SCRIPT_DESPLEGADO'; // Se obtiene al desplegar el backend.gs como Web App
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHTYtmMDzOaV15jn7NoS36mwpoz7irgVileX6eIThjNySE4ioNH-QwFt5vTdbuyWfN/exec'; // Se obtiene al desplegar el backend.gs como Web App
 
 const API = {
     /**
@@ -133,4 +133,5 @@ const API = {
 };
 
 window.CortijoAPI = API;
+
 
