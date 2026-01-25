@@ -208,9 +208,118 @@ function previewDocument(url) {
 }
 
 // --- TASKS ---
-function changeTaskYear(year) { currentTaskYear = parseInt(year); document.getElementById('task-year-display').textContent = year; renderTasks(); }
-function renderTasks() { /* same logic as before but simplified to save space/bugs */ }
-function initSortable() { /* same logic */ }
+function changeTaskYear(year) {
+    currentTaskYear = parseInt(year);
+    document.getElementById('task-year-display').textContent = year;
+    renderTasks();
+}
+
+function renderTasks() {
+    const lists = { waiting: document.getElementById('list-waiting'), running: document.getElementById('list-running'), completed: document.getElementById('list-completed') };
+    if (!lists.waiting) return;
+    Object.values(lists).forEach(l => l.innerHTML = '');
+    const counts = { waiting: 0, running: 0, completed: 0 };
+    const today = new Date().toISOString().split('T')[0];
+
+    tasks.filter(t => t.year === currentTaskYear).forEach(task => {
+        counts[task.status]++;
+        const isOverdue = task.dueDate && task.dueDate < today && task.status !== 'completed';
+        const card = document.createElement('div');
+        card.className = `task-card ${isOverdue ? 'overdue' : ''}`;
+        card.dataset.id = task.id;
+
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between;">
+                <span class="task-title" onclick="editTask(${task.id})">${task.title}</span>
+                <span class="priority-${task.priority}">${task.priority.toUpperCase()}</span>
+            </div>
+            <div class="task-meta">Asignado a: ${task.user}</div>
+            <div class="task-date ${isOverdue ? 'priority-high' : ''}"><i data-lucide="calendar" style="width:14px"></i> ${formatDateDisplay(task.dueDate) || 'Sin fecha'}</div>
+        `;
+        lists[task.status].appendChild(card);
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    ['waiting', 'running', 'completed'].forEach(s => {
+        const el = document.getElementById(`count-${s}`);
+        if (el) el.textContent = counts[s];
+    });
+}
+
+function initSortable() {
+    ['list-waiting', 'list-running', 'list-completed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new Sortable(el, {
+            group: 'tasks',
+            animation: 150,
+            onEnd: async (evt) => {
+                const taskId = parseInt(evt.item.dataset.id);
+                const newStatus = evt.to.id.replace('list-', '');
+                const task = tasks.find(t => t.id === taskId);
+                if (task && task.status !== newStatus) {
+                    task.status = newStatus;
+                    addAudit(`Movió tarea "${task.title}" a ${newStatus}`);
+                    renderTasks();
+                }
+            }
+        });
+    });
+}
+
+function openTaskModal() {
+    openModal('Nueva Tarea', `
+        <form id="task-form">
+            <div class="form-group"><label>Título</label><input type="text" id="t-title" required></div>
+            <div class="form-group"><label>Prioridad</label><select id="t-prio"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option></select></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="t-date"></div>
+            <button type="submit" class="btn-primary" style="width:100%">Crear</button>
+        </form>
+    `);
+    document.getElementById('task-form').onsubmit = (e) => {
+        e.preventDefault();
+        tasks.push({
+            id: Date.now(),
+            title: document.getElementById('t-title').value,
+            status: 'waiting',
+            user: currentUser.name,
+            priority: document.getElementById('t-prio').value,
+            dueDate: document.getElementById('t-date').value,
+            year: currentTaskYear
+        });
+        addAudit(`Creó tarea: ${document.getElementById('t-title').value}`);
+        renderTasks();
+        closeModal();
+    };
+}
+
+function editTask(id) {
+    const task = tasks.find(t => t.id === id);
+    openModal('Editar Tarea', `
+        <form id="edit-task-form">
+            <div class="form-group"><label>Título</label><input type="text" id="et-title" value="${task.title}"></div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn-primary" style="flex:1">Guardar</button>
+                <button type="button" onclick="deleteTask(${id})" class="btn-danger" style="flex:1">Eliminar</button>
+            </div>
+        </form>
+    `);
+    document.getElementById('edit-task-form').onsubmit = (e) => {
+        e.preventDefault();
+        task.title = document.getElementById('et-title').value;
+        addAudit(`Editó tarea: ${task.title}`);
+        renderTasks();
+        closeModal();
+    };
+}
+
+function deleteTask(id) {
+    if (confirm("¿Borrar tarea?")) {
+        tasks = tasks.filter(t => t.id !== id);
+        addAudit("Eliminó tarea");
+        renderTasks();
+        closeModal();
+    }
+}
 
 // --- AUTH ---
 function handleCredentialResponse(r) {
