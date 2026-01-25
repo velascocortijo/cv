@@ -3,7 +3,7 @@
  * Gestiona la comunicación con Google Apps Script.
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwHTYtmMDzOaV15jn7NoS36mwpoz7irgVileX6eIThjNySE4ioNH-QwFt5vTdbuyWfN/exec'; // Se obtiene al desplegar el backend.gs como Web App
+const API_URL = 'URL_DE_TU_SCRIPT_DESPLEGADO'; // Se obtiene al desplegar el backend.gs como Web App
 
 const API = {
     /**
@@ -11,15 +11,21 @@ const API = {
      */
     async getExpenses(filters = {}) {
         if (!API_URL || API_URL.includes('URL_DE_TU_SCRIPT')) {
-            console.warn("API_URL no configurada. Usando datos locales.");
-            return []; // Reemplazar con datos mock si se desea
+            console.warn("API_URL no configurada. Usando datos vacíos.");
+            return [];
         }
-        const queryParams = new URLSearchParams({ action: 'list', ...filters }).toString();
-        const response = await fetch(`${API_URL}?${queryParams}`, {
-            method: 'GET',
-            mode: 'cors'
-        });
-        return await response.json();
+        try {
+            const queryParams = new URLSearchParams({ action: 'list', ...filters }).toString();
+            const response = await fetch(`${API_URL}?${queryParams}`, {
+                method: 'GET',
+                mode: 'cors'
+            });
+            if (!response.ok) throw new Error('Error en la red');
+            return await response.json();
+        } catch (error) {
+            console.error("Error cargando gastos:", error);
+            throw error;
+        }
     },
 
     /**
@@ -32,6 +38,7 @@ const API = {
 
         let urlDrive = '';
         if (fileBlob) {
+            console.log("Subiendo archivo a Drive antes de guardar gasto...");
             urlDrive = await this.uploadToDrive(fileBlob);
         }
 
@@ -43,11 +50,14 @@ const API = {
 
         const response = await fetch(API_URL + '?action=create', {
             method: 'POST',
+            mode: 'cors',
             body: JSON.stringify(payload),
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // GAS necesita text/plain para evitar CORS pre-flight simple
+                'Content-Type': 'text/plain;charset=utf-8'
             }
         });
+
+        if (!response.ok) throw new Error('Error al conectar con el servidor');
         return await response.json();
     },
 
@@ -62,6 +72,7 @@ const API = {
         };
         const response = await fetch(API_URL + '?action=delete', {
             method: 'POST',
+            mode: 'cors',
             body: JSON.stringify(payload),
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8'
@@ -86,27 +97,39 @@ const API = {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async () => {
-                const base64 = reader.result;
-                const payload = {
-                    action: 'upload',
-                    base64: base64,
-                    fileName: file.name
-                };
-                const res = await fetch(API_URL + '?action=upload', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
+                try {
+                    const base64 = reader.result;
+                    const payload = {
+                        action: 'upload',
+                        base64: base64,
+                        fileName: file.name
+                    };
+
+                    const res = await fetch(API_URL + '?action=upload', {
+                        method: 'POST',
+                        mode: 'cors',
+                        body: JSON.stringify(payload),
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8'
+                        }
+                    });
+
+                    if (!res.ok) throw new Error('Error de conexión al subir');
+                    const data = await res.json();
+
+                    if (data.url && !data.url.startsWith('error')) {
+                        resolve(data.url);
+                    } else {
+                        reject(new Error(data.url || 'Error desconocido en Google Drive'));
                     }
-                });
-                const data = await res.json();
-                resolve(data.url);
+                } catch (e) {
+                    reject(e);
+                }
             };
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Error al leer el archivo local'));
             reader.readAsDataURL(file);
         });
     }
 };
 
 window.CortijoAPI = API;
-

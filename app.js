@@ -519,8 +519,31 @@ async function confirmDeleteExpense(id) {
 }
 
 // --- AUTH & MISC ---
-function handleCredentialResponse(r) {
-    currentUser = { name: 'Micael Velasco', avatar: 'https://ui-avatars.com/api/?name=Micael+Velasco&background=2d4a22&color=fff', role: 'admin' };
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+}
+
+function handleCredentialResponse(response) {
+    const responsePayload = parseJwt(response.credential);
+
+    currentUser = {
+        name: responsePayload.name,
+        email: responsePayload.email,
+        avatar: responsePayload.picture,
+        role: 'usuario' // Por defecto
+    };
+
+    // Si es tu email, podrías ponerte como Admin
+    if (currentUser.email === 'tuemail@gmail.com') {
+        currentUser.role = 'admin';
+    }
+
     localStorage.setItem('user', JSON.stringify(currentUser));
     showAuthenticatedUI();
 }
