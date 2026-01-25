@@ -12,7 +12,7 @@ let bookings = [
     { id: 1, start: '2026-01-15', end: '2026-01-18', user: 'Juan', title: 'Fin de semana' },
     { id: 2, start: '2026-01-24', end: '2026-01-26', user: 'Admin', title: 'Mantenimiento' }
 ];
-let tasks = [{ id: 1, title: 'Arreglar fuga en riego', status: 'running', user: 'Juan', priority: 'high', dueDate: '2026-01-20', year: 2026, history: [], subtasks: [] }];
+let tasks = []; // Cargadas por año
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Utils
 function formatDateDisplay(dateStr) {
-    if (!dateStr) return '';
+    if (!dateStr || dateStr === "undefined") return '';
     const parts = dateStr.includes('T') ? dateStr.split('T')[0].split('-') : dateStr.split('-');
     return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
 }
@@ -88,7 +88,8 @@ function renderCalendar() {
 function handleDateClick(date, id) { if (!currentUser) return; if (id) openEditBookingModal(id); else openBookingModal(date); }
 
 function openBookingModal(date) {
-    openModal('Nueva Reserva', `<form id="booking-form"><div class="form-group"><label>Entrada</label><input type="date" id="book-start" value="${date}" required></div><div class="form-group"><label>Salida</label><input type="date" id="book-end" value="${date}" required></div><div class="form-group"><label>Reserva</label><input type="text" id="book-title" required></div><button type="submit" class="btn-primary" style="width:100%">Confirmar</button></form>`);
+    const dVal = date || new Date().toISOString().split('T')[0];
+    openModal('Nueva Reserva', `<form id="booking-form"><div class="form-group"><label>Entrada</label><input type="date" id="book-start" value="${dVal}" required></div><div class="form-group"><label>Salida</label><input type="date" id="book-end" value="${dVal}" required></div><div class="form-group"><label>Reserva</label><input type="text" id="book-title" required></div><button type="submit" class="btn-primary" style="width:100%">Confirmar</button></form>`);
     document.getElementById('booking-form').onsubmit = (e) => {
         e.preventDefault();
         const start = document.getElementById('book-start').value, end = document.getElementById('book-end').value, title = document.getElementById('book-title').value;
@@ -101,6 +102,7 @@ function openBookingModal(date) {
 
 function openEditBookingModal(id) {
     const b = bookings.find(x => x.id === id);
+    if (!b) return;
     openModal('Editar Reserva', `<form id="edit-booking-form"><div class="form-group"><label>Entrada</label><input type="date" id="eb-start" value="${b.start}"></div><div class="form-group"><label>Salida</label><input type="date" id="eb-end" value="${b.end}"></div><div class="form-group"><label>Reserva</label><input type="text" id="eb-title" value="${b.title}"></div><div style="display:flex;gap:10px;"><button type="submit" class="btn-primary" style="flex:1">Guardar</button><button type="button" onclick="deleteBooking(${id})" class="btn-danger" style="flex:1">Eliminar</button></div></form>`);
     document.getElementById('edit-booking-form').onsubmit = (e) => {
         e.preventDefault();
@@ -115,7 +117,8 @@ function deleteBooking(id) { if (confirm("¿Borrar reserva?")) { bookings = book
 // --- EXPENSES ---
 function changeExpYear(year) {
     currentExpYear = year;
-    document.getElementById('exp-year-display').textContent = year;
+    const el = document.getElementById('exp-year-display');
+    if (el) el.textContent = year;
     renderExpenses();
 }
 
@@ -125,23 +128,27 @@ async function renderExpenses() {
     list.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
     try {
         cachedExpenses = await CortijoAPI.getExpenses({ year: currentExpYear });
-        filterExpenses(document.getElementById('expense-search').value);
-    } catch (e) { list.innerHTML = '<tr><td colspan="5" style="color:red">Error de conexión</td></tr>'; }
+        if (cachedExpenses.error) throw new Error(cachedExpenses.error);
+        filterExpenses(document.getElementById('expense-search')?.value || '');
+    } catch (e) { list.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`; }
 }
 
 function filterExpenses(query) {
     const list = document.getElementById('expenses-body');
-    const filtered = cachedExpenses.filter(e => e.concepto.toLowerCase().includes(query.toLowerCase()) || e.user_id.toLowerCase().includes(query.toLowerCase()));
+    if (!list) return;
+    const filtered = cachedExpenses.filter(e => String(e.concepto).toLowerCase().includes(query.toLowerCase()) || String(e.user_id).toLowerCase().includes(query.toLowerCase()));
     let total = 0;
     list.innerHTML = filtered.map(e => {
         total += parseFloat(e.cantidad);
         return `<tr><td>${formatDateDisplay(e.fecha)}</td><td>${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank">📎</a>` : ''}</td><td>${e.user_id}</td><td class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td><td><button class="btn-icon" onclick="editExpense('${e.id}')">✏️</button><button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')">🗑️</button></td></tr>`;
     }).join('');
-    document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
+    const balanceEl = document.getElementById('total-balance');
+    if (balanceEl) balanceEl.textContent = `${total.toFixed(2)} €`;
 }
 
 function openExpenseModal() {
-    openModal('Añadir Gasto', `<form id="exp-form"><div class="form-group"><label>Concepto</label><input type="text" id="ex-concept" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="ex-amount" required></div><div class="form-group"><label>Fecha</label><input type="date" id="ex-date" value="${new Date().toISOString().split('T')[0]}" required></div><div class="form-group"><label>Categoría</label><select id="ex-cat"><option>Suministros</option><option>Mantenimiento</option><option>Otros</option></select></div><div class="form-group"><label>Ticket (Opcional)</label><input type="file" id="ex-file"></div><button type="submit" id="ex-btn" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    const dVal = new Date().toISOString().split('T')[0];
+    openModal('Añadir Gasto', `<form id="exp-form"><div class="form-group"><label>Concepto</label><input type="text" id="ex-concept" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="ex-amount" required></div><div class="form-group"><label>Fecha</label><input type="date" id="ex-date" value="${dVal}" required></div><div class="form-group"><label>Categoría</label><select id="ex-cat"><option>Suministros</option><option>Mantenimiento</option><option>Otros</option></select></div><div class="form-group"><label>Ticket (Opcional)</label><input type="file" id="ex-file"></div><button type="submit" id="ex-btn" class="btn-primary" style="width:100%">Guardar</button></form>`);
     document.getElementById('exp-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('ex-btn'); btn.disabled = true; btn.textContent = 'Guardando...';
@@ -149,40 +156,43 @@ function openExpenseModal() {
         const year = new Date(date).getFullYear();
         const data = { user_id: currentUser.name, concepto: document.getElementById('ex-concept').value, cantidad: document.getElementById('ex-amount').value, fecha: date, categoria: document.getElementById('ex-cat').value };
         try {
-            await CortijoAPI.createExpense(data, document.getElementById('ex-file').files[0], `Gastos-${year}`);
+            const res = await CortijoAPI.createExpense(data, document.getElementById('ex-file').files[0], `Gastos-${year}`);
+            if (res.error) throw new Error(res.error);
             renderExpenses(); closeModal();
-        } catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Guardar'; }
+        } catch (err) { alert("Error al guardar: " + err.message); btn.disabled = false; btn.textContent = 'Guardar'; }
     };
 }
 
 function editExpense(id) {
     const e = cachedExpenses.find(x => x.id == id);
-    openModal('Editar Gasto', `<form id="edit-exp-form"><div class="form-group"><label>Concepto</label><input type="text" id="edex-concept" value="${e.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="edex-amount" value="${e.cantidad}"></div><div class="form-group"><label>Fecha</label><input type="date" id="edex-date" value="${e.fecha.split('T')[0]}"></div><button type="submit" class="btn-primary" style="width:100%">Actualizar</button></form>`);
+    if (!e) return;
+    const dateVal = e.fecha ? (e.fecha.includes('T') ? e.fecha.split('T')[0] : e.fecha) : new Date().toISOString().split('T')[0];
+    openModal('Editar Gasto', `<form id="edit-exp-form"><div class="form-group"><label>Concepto</label><input type="text" id="edex-concept" value="${e.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="edex-amount" value="${e.cantidad}"></div><div class="form-group"><label>Fecha</label><input type="date" id="edex-date" value="${dateVal}"></div><button type="submit" class="btn-primary" style="width:100%">Actualizar</button></form>`);
     document.getElementById('edit-exp-form').onsubmit = async (evt) => {
         evt.preventDefault();
         const data = { id, user_id: currentUser.name, concepto: document.getElementById('edex-concept').value, cantidad: document.getElementById('edex-amount').value, fecha: document.getElementById('edex-date').value, categoria: e.categoria };
-        await CortijoAPI.updateExpense(data);
+        const res = await CortijoAPI.updateExpense(data);
+        if (res.error) alert(res.error);
         renderExpenses(); closeModal();
     };
 }
 
-async function confirmDeleteExpense(id) { if (confirm("¿Eliminar gasto de la nube?")) { await CortijoAPI.deleteExpense(id, currentUser.name); renderExpenses(); } }
+async function confirmDeleteExpense(id) { if (confirm("¿Eliminar gasto?")) { const res = await CortijoAPI.deleteExpense(id, currentUser.name); if (res.error) alert(res.error); renderExpenses(); } }
 
 function exportExpenses() {
-    const query = document.getElementById('expense-search').value;
-    const filtered = cachedExpenses.filter(e => e.concepto.toLowerCase().includes(query.toLowerCase()));
     let csv = "Fecha,Concepto,Usuario,Importe,Categoria\n";
-    filtered.forEach(e => csv += `${formatDateDisplay(e.fecha)},"${e.concepto}",${e.user_id},${e.cantidad},${e.categoria}\n`);
+    cachedExpenses.forEach(e => csv += `${formatDateDisplay(e.fecha)},"${e.concepto}",${e.user_id},${e.cantidad},${e.categoria}\n`);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Gastos_Cortijo_${currentExpYear}.csv`; link.click();
 }
 
 // --- DOCUMENTS ---
-function changeDocYear(year) { currentDocYear = year; document.getElementById('doc-year-display').textContent = year; renderDocuments(); }
+function changeDocYear(year) { currentDocYear = year; const el = document.getElementById('doc-year-display'); if (el) el.textContent = year; renderDocuments(); }
 
 async function renderDocuments() {
     const list = document.getElementById('document-list');
-    list.innerHTML = '<p>Cargando archivos compartidos...</p>';
+    if (!list) return;
+    list.innerHTML = '<p>Cargando archivos...</p>';
     try {
         const docs = await CortijoAPI.getDocuments(currentDocYear);
         if (!docs.length) { list.innerHTML = '<p style="grid-column:1/-1;text-align:center;">Carpeta vacía.</p>'; return; }
@@ -196,135 +206,67 @@ async function handleFileUpload(event) {
     try {
         const url = await CortijoAPI.uploadToDrive(file);
         const data = { name: file.name, type: file.type.includes('pdf') ? 'pdf' : 'image', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: url };
-        await CortijoAPI.addDocument(data);
+        const res = await CortijoAPI.addDocument(data);
+        if (res.error) throw new Error(res.error);
         renderDocuments(); addAudit(`Subió archivo: ${file.name}`);
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert("Error: " + e.message); }
     document.getElementById('loader').style.display = 'none';
 }
 
 function previewDocument(url) {
-    const id = url.match(/[-\w]{25,}/)[0];
-    openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${id}/preview" style="width:100%;height:500px;border:none;"></iframe>`);
+    const match = url.match(/[-\w]{25,}/);
+    if (!match) return alert("URL no válida");
+    openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${match[0]}/preview" style="width:100%;height:500px;border:none;"></iframe>`);
 }
 
 // --- TASKS ---
-function changeTaskYear(year) {
-    currentTaskYear = parseInt(year);
-    document.getElementById('task-year-display').textContent = year;
-    renderTasks();
-}
-
+function changeTaskYear(year) { currentTaskYear = parseInt(year); const el = document.getElementById('task-year-display'); if (el) el.textContent = year; renderTasks(); }
 function renderTasks() {
     const lists = { waiting: document.getElementById('list-waiting'), running: document.getElementById('list-running'), completed: document.getElementById('list-completed') };
     if (!lists.waiting) return;
     Object.values(lists).forEach(l => l.innerHTML = '');
     const counts = { waiting: 0, running: 0, completed: 0 };
     const today = new Date().toISOString().split('T')[0];
-
     tasks.filter(t => t.year === currentTaskYear).forEach(task => {
         counts[task.status]++;
-        const isOverdue = task.dueDate && task.dueDate < today && task.status !== 'completed';
-        const card = document.createElement('div');
-        card.className = `task-card ${isOverdue ? 'overdue' : ''}`;
-        card.dataset.id = task.id;
-
-        card.innerHTML = `
-            <div style="display:flex; justify-content:space-between;">
-                <span class="task-title" onclick="editTask(${task.id})">${task.title}</span>
-                <span class="priority-${task.priority}">${task.priority.toUpperCase()}</span>
-            </div>
-            <div class="task-meta">Asignado a: ${task.user}</div>
-            <div class="task-date ${isOverdue ? 'priority-high' : ''}"><i data-lucide="calendar" style="width:14px"></i> ${formatDateDisplay(task.dueDate) || 'Sin fecha'}</div>
-        `;
-        lists[task.status].appendChild(card);
+        const div = document.createElement('div'); div.className = 'task-card'; div.dataset.id = task.id;
+        div.innerHTML = `<div style="display:flex;justify-content:space-between;"><span class="task-title" onclick="editTask(${task.id})">${task.title}</span><span class="priority-${task.priority}">${task.priority}</span></div><div class="task-meta">Por: ${task.user}</div>`;
+        lists[task.status].appendChild(div);
     });
+    ['waiting', 'running', 'completed'].forEach(s => { const el = document.getElementById(`count-${s}`); if (el) el.textContent = counts[s]; });
     if (typeof lucide !== 'undefined') lucide.createIcons();
-    ['waiting', 'running', 'completed'].forEach(s => {
-        const el = document.getElementById(`count-${s}`);
-        if (el) el.textContent = counts[s];
-    });
 }
-
 function initSortable() {
     ['list-waiting', 'list-running', 'list-completed'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         new Sortable(el, {
-            group: 'tasks',
-            animation: 150,
-            onEnd: async (evt) => {
+            group: 'tasks', animation: 150, onEnd: (evt) => {
                 const taskId = parseInt(evt.item.dataset.id);
-                const newStatus = evt.to.id.replace('list-', '');
                 const task = tasks.find(t => t.id === taskId);
-                if (task && task.status !== newStatus) {
-                    task.status = newStatus;
-                    addAudit(`Movió tarea "${task.title}" a ${newStatus}`);
-                    renderTasks();
-                }
+                if (task) { task.status = evt.to.id.replace('list-', ''); renderTasks(); }
             }
         });
     });
 }
-
 function openTaskModal() {
-    openModal('Nueva Tarea', `
-        <form id="task-form">
-            <div class="form-group"><label>Título</label><input type="text" id="t-title" required></div>
-            <div class="form-group"><label>Prioridad</label><select id="t-prio"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option></select></div>
-            <div class="form-group"><label>Fecha</label><input type="date" id="t-date"></div>
-            <button type="submit" class="btn-primary" style="width:100%">Crear</button>
-        </form>
-    `);
-    document.getElementById('task-form').onsubmit = (e) => {
+    openModal('Nueva Tarea', `<form id="t-form"><div class="form-group"><label>Tarea</label><input type="text" id="tn" required></div><div class="form-group"><label>Prioridad</label><select id="tp"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option></select></div><button type="submit" class="btn-primary" style="width:100%">Crear</button></form>`);
+    document.getElementById('t-form').onsubmit = (e) => {
         e.preventDefault();
-        tasks.push({
-            id: Date.now(),
-            title: document.getElementById('t-title').value,
-            status: 'waiting',
-            user: currentUser.name,
-            priority: document.getElementById('t-prio').value,
-            dueDate: document.getElementById('t-date').value,
-            year: currentTaskYear
-        });
-        addAudit(`Creó tarea: ${document.getElementById('t-title').value}`);
-        renderTasks();
-        closeModal();
+        tasks.push({ id: Date.now(), title: document.getElementById('tn').value, status: 'waiting', user: currentUser.name, priority: document.getElementById('tp').value, year: currentTaskYear });
+        renderTasks(); closeModal();
     };
 }
-
 function editTask(id) {
-    const task = tasks.find(t => t.id === id);
-    openModal('Editar Tarea', `
-        <form id="edit-task-form">
-            <div class="form-group"><label>Título</label><input type="text" id="et-title" value="${task.title}"></div>
-            <div style="display:flex;gap:10px;">
-                <button type="submit" class="btn-primary" style="flex:1">Guardar</button>
-                <button type="button" onclick="deleteTask(${id})" class="btn-danger" style="flex:1">Eliminar</button>
-            </div>
-        </form>
-    `);
-    document.getElementById('edit-task-form').onsubmit = (e) => {
-        e.preventDefault();
-        task.title = document.getElementById('et-title').value;
-        addAudit(`Editó tarea: ${task.title}`);
-        renderTasks();
-        closeModal();
-    };
-}
-
-function deleteTask(id) {
-    if (confirm("¿Borrar tarea?")) {
-        tasks = tasks.filter(t => t.id !== id);
-        addAudit("Eliminó tarea");
-        renderTasks();
-        closeModal();
-    }
+    const t = tasks.find(x => x.id === id);
+    openModal('Editar Tarea', `<form id="et-form"><div class="form-group"><label>Tarea</label><input type="text" id="etn" value="${t.title}"></div><button type="submit" class="btn-primary">Guardar</button></form>`);
+    document.getElementById('et-form').onsubmit = (e) => { e.preventDefault(); t.title = document.getElementById('etn').value; renderTasks(); closeModal(); };
 }
 
 // --- AUTH ---
 function handleCredentialResponse(r) {
-    const payload = JSON.parse(atob(r.credential.split('.')[1]));
-    currentUser = { name: payload.name, avatar: payload.picture, email: payload.email };
+    const p = JSON.parse(atob(r.credential.split('.')[1]));
+    currentUser = { name: p.name, avatar: p.picture, email: p.email };
     localStorage.setItem('user', JSON.stringify(currentUser));
     showAuthenticatedUI();
 }
@@ -338,4 +280,9 @@ function showAuthenticatedUI() {
 function signOut() { localStorage.removeItem('user'); location.reload(); }
 function openModal(t, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('modal-container').classList.remove('hidden'); }
 function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
-function renderProfile() { document.getElementById('profile-name').textContent = currentUser.name; document.getElementById('profile-avatar').src = currentUser.avatar; }
+function renderProfile() {
+    const el = document.getElementById('profile-name');
+    if (el) el.textContent = currentUser.name;
+    const av = document.getElementById('profile-avatar');
+    if (av) av.src = currentUser.avatar;
+}
