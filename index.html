@@ -88,10 +88,17 @@
         <!-- Expenses Section -->
         <section id="expenses-section" class="content-section hidden">
             <div class="section-header">
-                <h2>Gestión Económica</h2>
+                <div class="header-with-filter">
+                    <h2>Gestión Económica <span id="exp-year-display">2026</span></h2>
+                    <select id="exp-year-selector" onchange="changeExpYear(this.value)">
+                        <option value="2024">Año 2024</option>
+                        <option value="2025">Año 2025</option>
+                        <option value="2026" selected>Año 2026</option>
+                    </select>
+                </div>
                 <div class="balance-cards">
                     <div class="card balance-card">
-                        <span>Balance Total</span>
+                        <span>Balance Total (Año)</span>
                         <h3 id="total-balance">0.00 €</h3>
                     </div>
                 </div>
