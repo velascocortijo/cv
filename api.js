@@ -75,6 +75,24 @@ const API = {
         });
     },
 
+    async updateDocument(id, data) {
+        const response = await fetch(API_URL + '?action=updateDocument', {
+            method: 'POST',
+            body: JSON.stringify({ id, ...data }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    async deleteDocument(id) {
+        const response = await fetch(API_URL + '?action=deleteDocument', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
         const response = await fetch(`${API_URL}?action=listTasks&year=${year}`);

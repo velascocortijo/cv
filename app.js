@@ -158,14 +158,38 @@ function filterExpenses(query) {
     list.innerHTML = filtered.map(e => {
         total += parseFloat(e.cantidad);
         return `<tr>
-            <td data-label="Fecha">${formatDateDisplay(e.fecha)}</td>
-            <td data-label="Concepto">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank">📎</a>` : ''}</td>
+            <td data-label="Fecha" onclick="openEditExpenseModal(${e.id})" style="cursor:pointer;">${formatDateDisplay(e.fecha)}</td>
+            <td data-label="Concepto" onclick="openEditExpenseModal(${e.id})" style="cursor:pointer;">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank" onclick="event.stopPropagation()">📎</a>` : ''}</td>
             <td data-label="Usuario">${e.user_id}</td>
             <td data-label="Importe" class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td>
             <td data-label="Acciones"><button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')">🗑️</button></td>
         </tr>`;
     }).join('');
     document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
+}
+
+function openEditExpenseModal(id) {
+    const exp = cachedExpenses.find(e => e.id == id);
+    if (!exp) return;
+
+    openModal('Editar Gasto', `
+        <form id="edit-ex-form">
+            <div class="form-group"><label>Concepto</label><input type="text" id="eexc" value="${exp.concepto}" required></div>
+            <div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eexa" value="${exp.cantidad}" required></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="eexd" value="${new Date(exp.fecha).toISOString().split('T')[0]}" required></div>
+            <button type="submit" class="btn-primary" style="width:100%">Guardar Cambios</button>
+        </form>
+    `);
+    document.getElementById('edit-ex-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            concepto: document.getElementById('eexc').value,
+            cantidad: document.getElementById('eexa').value,
+            fecha: document.getElementById('eexd').value
+        };
+        await CortijoAPI.updateExpense(id, data);
+        renderExpenses(); closeModal();
+    };
 }
 
 function openExpenseModal() {
@@ -179,11 +203,12 @@ function openExpenseModal() {
     };
 }
 
-async function confirmDeleteExpense(id) { if (confirm("¿Eliminar?")) { await CortijoAPI.deleteExpense(id); renderExpenses(); } }
+async function confirmDeleteExpense(id) { if (confirm("¿Eliminar este gasto?")) { await CortijoAPI.deleteExpense(id); renderExpenses(); } }
 
 // --- DOCUMENTS ---
 function changeDocYear(year) { currentDocYear = year; document.getElementById('doc-year-display').textContent = year; renderDocuments(); }
 
+let cachedDocs = [];
 async function renderDocuments() {
     const list = document.getElementById('document-list');
     if (!list) return;
@@ -191,22 +216,49 @@ async function renderDocuments() {
     try {
         const data = await CortijoAPI.getDocuments(currentDocYear);
         if (data.error) throw new Error(data.error);
+        cachedDocs = data;
         if (!data || !data.length) { list.innerHTML = '<p>No hay documentos para este año.</p>'; return; }
         list.innerHTML = data.map(d => {
             const url = d.url_drive || '';
             return `<div class="document-item">
-                <span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span>
-                <h4>${d.name}</h4>
+                <span class="doc-icon" onclick="openEditDocModal(${d.id})">${d.type === 'pdf' ? '📄' : '🖼️'}</span>
+                <h4 onclick="openEditDocModal(${d.id})" style="cursor:pointer;">${d.name}</h4>
                 <p>${d.size} • ${formatDateDisplay(d.date)}</p>
-                <div style="display:flex;gap:5px;margin-top:10px;justify-content:center;">
+                <div style="display:flex;gap:5px;margin-top:10px;justify-content:center;flex-wrap:wrap;">
                     <button class="btn-small" onclick="previewDocument('${url}')">👁️ Ver</button>
                     <button class="btn-small" onclick="downloadDocument('${url}')">⬇️ Bajar</button>
+                    <button class="btn-small btn-danger" onclick="confirmDeleteDocument(${d.id})" style="padding: 4px 8px; background:var(--danger); color:white; border:none;">🗑️</button>
                 </div>
             </div>`;
         }).join('');
     } catch (e) {
         console.error("renderDocuments Error:", e);
         list.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+    }
+}
+
+function openEditDocModal(id) {
+    const doc = cachedDocs.find(d => d.id == id);
+    if (!doc) return;
+
+    openModal('Editar Documento', `
+        <form id="edit-doc-form">
+            <div class="form-group"><label>Nombre del Archivo</label><input type="text" id="edon" value="${doc.name}" required></div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Subido el: ${formatDateDisplay(doc.date)}</p>
+            <button type="submit" class="btn-primary" style="width:100%">Guardar Cambios</button>
+        </form>
+    `);
+    document.getElementById('edit-doc-form').onsubmit = async (e) => {
+        e.preventDefault();
+        await CortijoAPI.updateDocument(id, { name: document.getElementById('edon').value });
+        renderDocuments(); closeModal();
+    };
+}
+
+async function confirmDeleteDocument(id) {
+    if (confirm("¿Seguro que quieres eliminar este documento? Se borrará de la lista (el archivo seguirá en Drive).")) {
+        await CortijoAPI.deleteDocument(id);
+        renderDocuments();
     }
 }
 
