@@ -201,11 +201,21 @@ async function renderTasks() {
     const lists = { waiting: document.getElementById('list-waiting'), running: document.getElementById('list-running'), completed: document.getElementById('list-completed') };
     Object.values(lists).forEach(l => l.innerHTML = '...');
     try {
-        cachedTasks = await CortijoAPI.getTasks(currentTaskYear);
+        const data = await CortijoAPI.getTasks(currentTaskYear);
+        cachedTasks = data.map(t => ({
+            ...t,
+            subtasks: t.subtasks ? JSON.parse(t.subtasks) : []
+        }));
+
         Object.values(lists).forEach(l => l.innerHTML = '');
         let counts = { waiting: 0, running: 0, completed: 0 };
+
         cachedTasks.forEach(task => {
             counts[task.status]++;
+            const completedSubs = task.subtasks.filter(s => s.completed).length;
+            const totalSubs = task.subtasks.length;
+            const percent = totalSubs > 0 ? Math.round((completedSubs / totalSubs) * 100) : 0;
+
             const card = document.createElement('div');
             card.className = 'task-card'; card.dataset.id = task.id;
             card.innerHTML = `
@@ -213,6 +223,11 @@ async function renderTasks() {
                     <span class="task-title" onclick="openEditTaskModal(${task.id})">${task.title}</span>
                     <span class="priority-badge ${task.priority}">${task.priority}</span>
                 </div>
+                ${totalSubs > 0 ? `
+                <div class="task-progress">
+                    <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+                    <span class="progress-text">${completedSubs}/${totalSubs}</span>
+                </div>` : ''}
                 <div class="task-meta">Por: ${task.user}</div>
             `;
             lists[task.status].appendChild(card);
@@ -220,12 +235,17 @@ async function renderTasks() {
         Object.keys(counts).forEach(s => document.getElementById(`count-${s}`).textContent = counts[s]);
         initSortable();
         if (typeof lucide !== 'undefined') lucide.createIcons();
-    } catch (e) { Object.values(lists).forEach(l => l.innerHTML = 'Error'); }
+    } catch (e) {
+        console.error("Error tasks:", e);
+        Object.values(lists).forEach(l => l.innerHTML = 'Error');
+    }
 }
 
 function initSortable() {
     ['list-waiting', 'list-running', 'list-completed'].forEach(id => {
-        new Sortable(document.getElementById(id), {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new Sortable(el, {
             group: 'tasks', animation: 150, onEnd: async (evt) => {
                 const taskId = evt.item.dataset.id;
                 const newStatus = evt.to.id.replace('list-', '');
@@ -240,6 +260,9 @@ function openTaskModal() {
     openModal('Nueva Tarea', `
         <form id="t-form">
             <div class="form-group"><label>Tarea</label><input type="text" id="tn" required placeholder="¿Qué hay que hacer?"></div>
+            <div class="form-group"><label>Subprocesos (uno por línea)</label>
+                <textarea id="tsubs" placeholder="Ej:\nComprar material\nLlamar al fontanero" rows="3"></textarea>
+            </div>
             <div class="form-group"><label>Prioridad</label>
                 <select id="tp">
                     <option value="low">Baja</option>
@@ -252,16 +275,42 @@ function openTaskModal() {
     `);
     document.getElementById('t-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.addTask({ id: Date.now(), title: document.getElementById('tn').value, status: 'waiting', user: currentUser.name, priority: document.getElementById('tp').value, year: currentTaskYear });
+        const subLines = document.getElementById('tsubs').value.split('\n').filter(l => l.trim() !== '');
+        const subtasks = subLines.map(text => ({ text: text.trim(), completed: false }));
+
+        await CortijoAPI.addTask({
+            id: Date.now(),
+            title: document.getElementById('tn').value,
+            status: 'waiting',
+            user: currentUser.name,
+            priority: document.getElementById('tp').value,
+            year: currentTaskYear,
+            subtasks: JSON.stringify(subtasks)
+        });
         renderTasks(); closeModal();
     };
 }
 
 function openEditTaskModal(id) {
     const task = cachedTasks.find(t => t.id == id);
+    if (!task) return;
+
     openModal('Editar Tarea', `
         <form id="et-form">
             <div class="form-group"><label>Título</label><input type="text" id="etn" value="${task.title}" required></div>
+            
+            <div class="subtasks-editor" style="margin: 1rem 0;">
+                <label>Subprocesos</label>
+                <div id="sub-list" style="margin-top:0.5rem; display:grid; gap:8px;">
+                    ${task.subtasks.map((s, idx) => `
+                        <div class="subtask-row" style="display:flex; align-items:center; gap:10px; background:var(--bg-light); padding:8px; border-radius:8px;">
+                            <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateSubtaskStatus(${id}, ${idx}, this.checked)">
+                            <span style="${s.completed ? 'text-decoration:line-through; opacity:0.6;' : ''}">${s.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
             <div class="form-group"><label>Prioridad</label>
                 <select id="etp">
                     <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
@@ -270,16 +319,29 @@ function openEditTaskModal(id) {
                 </select>
             </div>
             <div style="display:flex;gap:10px;margin-top:1rem;">
-                <button type="submit" class="btn-primary" style="flex:1">Guardar</button>
+                <button type="submit" class="btn-primary" style="flex:1">Guardar cambios</button>
                 <button type="button" onclick="confirmDeleteTask(${id})" class="btn-danger" style="flex:1">Eliminar</button>
             </div>
         </form>
     `);
+
     document.getElementById('et-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.updateTask(id, { title: document.getElementById('etn').value, priority: document.getElementById('etp').value });
+        await CortijoAPI.updateTask(id, {
+            title: document.getElementById('etn').value,
+            priority: document.getElementById('etp').value
+        });
         renderTasks(); closeModal();
     };
+}
+
+async function updateSubtaskStatus(taskId, subIdx, isCompleted) {
+    const task = cachedTasks.find(t => t.id == taskId);
+    if (!task) return;
+
+    task.subtasks[subIdx].completed = isCompleted;
+    await CortijoAPI.updateTask(taskId, { subtasks: JSON.stringify(task.subtasks) });
+    renderTasks();
 }
 
 async function confirmDeleteTask(id) {
