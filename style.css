@@ -721,10 +721,262 @@ td {
     color: white;
 }
 
+/* Mobile and Tablet Responsiveness */
 @media (max-width: 1024px) {
     .kanban-board {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
+
+    .hero-section {
+        flex-direction: column;
+        padding: 4rem 1.5rem;
+        text-align: center;
+    }
+
+    .hero-content {
+        padding-right: 0;
+        margin-bottom: 3rem;
+    }
+
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero-image {
+        width: 100%;
+        height: 400px;
+    }
+
+    .login-card {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        padding: 0.5rem 1rem;
+    }
+
+    #mobile-menu-btn {
+        display: block !important;
+    }
+
+    nav#main-nav {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background: var(--bg-card);
+        flex-direction: column;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        z-index: 1000;
+        display: none;
+    }
+
+    nav#main-nav.show {
+        display: flex !important;
+    }
+
+    nav#main-nav button {
+        width: 100%;
+        text-align: left;
+        padding: 1rem;
+        margin: 0;
+        border-bottom: 1px solid var(--bg-main);
+    }
+
+    nav button.active::after {
+        display: none;
+    }
+
+    #user-info {
+        gap: 0.5rem;
+    }
+
+    #user-name {
+        display: none;
+    }
+
+    .content-section {
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+
+    .header-with-filter {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .header-with-filter select {
+        width: 100%;
+    }
+
+    .btn-primary {
+        width: 100%;
+    }
+
+    .calendar-nav h3 {
+        font-size: 1.1rem;
+        min-width: auto;
+    }
+
+    .calendar-container {
+        padding: 0.5rem;
+        border-radius: 16px;
+    }
+
+    .day-cell {
+        font-size: 0.7rem;
+    }
+
+    .calendar-event-text {
+        display: none;
+        /* Hide text on mobile dates, use dots only */
+    }
+
+    .day-cell.booked::after {
+        content: '';
+        width: 4px;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 50%;
+        position: absolute;
+        bottom: 4px;
+    }
+
+    .table-container {
+        padding: 0.5rem;
+        overflow-x: auto;
+    }
+
+    .table-actions {
+        flex-direction: column;
+    }
+
+    table thead {
+        display: none;
+    }
+
+    table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.5rem;
+    }
+
+    table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 0.5rem;
+        border: none;
+        border-bottom: 1px solid var(--bg-main);
+    }
+
+    table td:last-child {
+        border-bottom: none;
+    }
+
+    table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .document-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .profile-card {
+        padding: 1.5rem;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    #profile-avatar {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+/* Modal Responsive */
+@media (max-width: 480px) {
+    .modal {
+        padding: 1.5rem;
+        width: 95%;
+    }
+
+    .modal-header h3 {
+        font-size: 1.2rem;
+    }
+}
+
+/* Helper Class */
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block;
+    }
+}
+
+/* Modal Base Styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--bg-card);
+    width: 90%;
+    max-width: 500px;
+    border-radius: 24px;
+    padding: 2rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+footer {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
 }
 
 /* Modal */

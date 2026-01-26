@@ -64,11 +64,19 @@ function showSection(sectionId) {
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
     document.querySelector(`nav button[onclick*="${sectionId}"]`)?.classList.add('active');
 
+    // Cerrar menú móvil al cambiar de sección
+    document.getElementById('main-nav').classList.remove('show');
+
     if (sectionId === 'expenses') renderExpenses();
     if (sectionId === 'calendar') renderCalendar();
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'documents') renderDocuments();
     if (sectionId === 'profile') renderProfile();
+}
+
+function toggleMobileMenu() {
+    const nav = document.getElementById('main-nav');
+    nav.classList.toggle('show');
 }
 
 // --- CALENDAR ---
@@ -149,7 +157,13 @@ function filterExpenses(query) {
     let total = 0;
     list.innerHTML = filtered.map(e => {
         total += parseFloat(e.cantidad);
-        return `<tr><td>${formatDateDisplay(e.fecha)}</td><td>${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank">📎</a>` : ''}</td><td>${e.user_id}</td><td class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td><td><button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')">🗑️</button></td></tr>`;
+        return `<tr>
+            <td data-label="Fecha">${formatDateDisplay(e.fecha)}</td>
+            <td data-label="Concepto">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank">📎</a>` : ''}</td>
+            <td data-label="Usuario">${e.user_id}</td>
+            <td data-label="Importe" class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td>
+            <td data-label="Acciones"><button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')">🗑️</button></td>
+        </tr>`;
     }).join('');
     document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
 }
@@ -383,7 +397,7 @@ function handleCredentialResponse(r) {
 }
 function showAuthenticatedUI() {
     ['login-section', 'auth-container'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    ['main-nav', 'user-info'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+    ['main-nav', 'user-info', 'mobile-menu-btn'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-avatar').src = currentUser.avatar;
     showSection('calendar');
