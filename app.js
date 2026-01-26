@@ -378,12 +378,16 @@ function openEditTaskModal(id) {
             <div class="form-group"><label>Título</label><input type="text" id="etn" value="${task.title}" required></div>
             
             <div class="subtasks-editor" style="margin: 1rem 0;">
-                <label>Subprocesos</label>
-                <div id="sub-list" style="margin-top:0.5rem; display:grid; gap:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <label style="margin:0;">Subprocesos</label>
+                    <button type="button" class="btn-small" onclick="addNewSubtaskField()">+ Añadir</button>
+                </div>
+                <div id="sub-edit-list" style="display:grid; gap:8px;">
                     ${task.subtasks.map((s, idx) => `
-                        <div class="subtask-row" style="display:flex; align-items:center; gap:10px; background:var(--bg-light); padding:8px; border-radius:8px;">
-                            <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateSubtaskStatus(${id}, ${idx}, this.checked)">
-                            <span style="${s.completed ? 'text-decoration:line-through; opacity:0.6;' : ''}">${s.text}</span>
+                        <div class="subtask-edit-row" style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" class="sub-check" ${s.completed ? 'checked' : ''} style="width:18px;height:18px;">
+                            <input type="text" class="sub-text" value="${s.text}" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nombre del subproceso">
+                            <button type="button" class="btn-icon" onclick="this.parentElement.remove()" style="font-size:1rem;">🗑️</button>
                         </div>
                     `).join('')}
                 </div>
@@ -396,21 +400,45 @@ function openEditTaskModal(id) {
                     <option value="high" ${task.priority === 'high' ? 'selected' : ''}>Alta</option>
                 </select>
             </div>
-            <div style="display:flex;gap:10px;margin-top:1rem;">
-                <button type="submit" class="btn-primary" style="flex:1">Guardar cambios</button>
-                <button type="button" onclick="confirmDeleteTask(${id})" class="btn-danger" style="flex:1">Eliminar</button>
+            <div style="display:flex;gap:10px;margin-top:1.5rem;">
+                <button type="submit" class="btn-primary" style="flex:1">Guardar Todo</button>
+                <button type="button" onclick="confirmDeleteTask(${id})" class="btn-danger" style="flex:1">Eliminar Tarea</button>
             </div>
         </form>
     `);
 
     document.getElementById('et-form').onsubmit = async (e) => {
         e.preventDefault();
+
+        // Recoger todos los subprocesos de la interfaz
+        const subRows = document.querySelectorAll('.subtask-edit-row');
+        const updatedSubtasks = Array.from(subRows).map(row => ({
+            text: row.querySelector('.sub-text').value.trim(),
+            completed: row.querySelector('.sub-check').checked
+        })).filter(s => s.text !== "");
+
         await CortijoAPI.updateTask(id, {
             title: document.getElementById('etn').value,
-            priority: document.getElementById('etp').value
+            priority: document.getElementById('etp').value,
+            subtasks: JSON.stringify(updatedSubtasks)
         });
-        renderTasks(); closeModal();
+
+        renderTasks();
+        closeModal();
     };
+}
+
+function addNewSubtaskField() {
+    const container = document.getElementById('sub-edit-list');
+    const div = document.createElement('div');
+    div.className = 'subtask-edit-row';
+    div.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    div.innerHTML = `
+        <input type="checkbox" class="sub-check" style="width:18px;height:18px;">
+        <input type="text" class="sub-text" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nuevo subproceso">
+        <button type="button" class="btn-icon" onclick="this.parentElement.remove()" style="font-size:1rem;">🗑️</button>
+    `;
+    container.appendChild(div);
 }
 
 async function updateSubtaskStatus(taskId, subIdx, isCompleted) {
