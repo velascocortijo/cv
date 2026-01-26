@@ -260,10 +260,14 @@ async function renderTasks() {
                     <span class="task-title" onclick="openEditTaskModal(${task.id})">${task.title}</span>
                     <span class="priority-badge ${task.priority}">${task.priority}</span>
                 </div>
-                ${totalSubs > 0 ? `
-                <div class="task-progress">
-                    <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
-                    <span class="progress-text">${completedSubs}/${totalSubs}</span>
+                ${task.subtasks.length > 0 ? `
+                <div class="card-subtasks" style="margin: 10px 0; display: grid; gap: 6px;">
+                    ${task.subtasks.map((s, idx) => `
+                        <label class="subtask-label" style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; background:rgba(0,0,0,0.02); padding:4px 8px; border-radius:6px;">
+                            <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateSubtaskStatus(${task.id}, ${idx}, this.checked)" style="width:14px; height:14px;">
+                            <span style="${s.completed ? 'text-decoration:line-through; opacity:0.5;' : ''}">${s.text}</span>
+                        </label>
+                    `).join('')}
                 </div>` : ''}
                 <div class="task-meta">Por: ${task.user}</div>
             `;
