@@ -192,7 +192,18 @@ async function renderDocuments() {
         const data = await CortijoAPI.getDocuments(currentDocYear);
         if (data.error) throw new Error(data.error);
         if (!data || !data.length) { list.innerHTML = '<p>No hay documentos para este año.</p>'; return; }
-        list.innerHTML = data.map(d => `<div class="document-item"><span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span><h4>${d.name}</h4><p>${d.size} • ${formatDateDisplay(d.date)}</p><div style="display:flex;gap:5px;margin-top:10px;"><button class="btn-small" onclick="previewDocument('${d.url_drive}')">👁️ Ver</button><button class="btn-small" onclick="window.open('${d.url_drive}')">⬇️ Bajar</button></div></div>`).join('');
+        list.innerHTML = data.map(d => {
+            const url = d.url_drive || '';
+            return `<div class="document-item">
+                <span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span>
+                <h4>${d.name}</h4>
+                <p>${d.size} • ${formatDateDisplay(d.date)}</p>
+                <div style="display:flex;gap:5px;margin-top:10px;justify-content:center;">
+                    <button class="btn-small" onclick="previewDocument('${url}')">👁️ Ver</button>
+                    <button class="btn-small" onclick="downloadDocument('${url}')">⬇️ Bajar</button>
+                </div>
+            </div>`;
+        }).join('');
     } catch (e) {
         console.error("renderDocuments Error:", e);
         list.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
@@ -204,18 +215,30 @@ async function handleFileUpload(event) {
     document.getElementById('loader').style.display = 'flex';
     try {
         const driveUrl = await CortijoAPI.uploadToDrive(file, currentDocYear);
-        const data = { id: Date.now(), name: file.name, type: file.type.includes('pdf') ? 'pdf' : 'image', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: driveUrl };
+        const data = { id: Date.now(), name: file.name, type: file.type.split('/')[1] || 'doc', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: driveUrl };
         await CortijoAPI.addDocument(data);
         renderDocuments();
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert("Error al subir: " + e.message); }
     document.getElementById('loader').style.display = 'none';
 }
 
 function previewDocument(url) {
+    if (!url) return alert("Enlace no disponible");
     const match = url.match(/[-\w]{25,}/);
-    if (!match) return;
+    if (!match) return window.open(url, '_blank');
     const id = match[0];
-    openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${id}/preview" style="width:100%;height:500px;border:none;"></iframe>`);
+    openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${id}/preview" style="width:100%;height:500px;border:none;border-radius:12px;"></iframe>`);
+}
+
+function downloadDocument(url) {
+    if (!url) return alert("Enlace no disponible");
+    const match = url.match(/[-\w]{25,}/);
+    if (match) {
+        // Enlace de descarga directa de Google Drive
+        window.open(`https://drive.google.com/uc?export=download&id=${match[0]}`, '_blank');
+    } else {
+        window.open(url, '_blank');
+    }
 }
 
 // --- TASKS ---
