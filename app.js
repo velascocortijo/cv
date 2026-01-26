@@ -2,9 +2,9 @@
 let currentUser = null;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let currentTaskYear = 2026;
-let currentDocYear = 2026;
-let currentExpYear = 2026;
+let currentTaskYear = new Date().getFullYear();
+let currentDocYear = new Date().getFullYear();
+let currentExpYear = new Date().getFullYear();
 
 let auditLog = [{ date: new Date().toLocaleString(), user: 'Sistema', action: 'Sesión iniciada' }];
 let cachedExpenses = [];
@@ -16,6 +16,7 @@ let bookings = [
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    initYearSelectors();
     if (typeof lucide !== 'undefined') lucide.createIcons();
     setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1000);
     if (localStorage.getItem('user')) {
@@ -24,6 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('expense-search')?.addEventListener('input', (e) => filterExpenses(e.target.value));
 });
+
+function initYearSelectors() {
+    const years = [2026, 2027, 2028, 2029, 2030];
+    const selectors = ['exp-year-selector', 'task-year-selector', 'doc-year-selector'];
+    selectors.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>Año ${y}</option>`).join('');
+    });
+}
 
 // Utils
 function formatDateDisplay(dateStr) {
@@ -159,6 +170,7 @@ async function renderDocuments() {
     list.innerHTML = '<p>Cargando...</p>';
     try {
         const docs = await CortijoAPI.getDocuments(currentDocYear);
+        if (!docs.length) { list.innerHTML = '<p>No hay documentos para este año.</p>'; return; }
         list.innerHTML = docs.map(d => `<div class="document-item"><span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span><h4>${d.name}</h4><p>${d.size} • ${formatDateDisplay(d.date)}</p><div style="display:flex;gap:5px;margin-top:10px;"><button class="btn-small" onclick="previewDocument('${d.url_drive}')">👁️ Ver</button><button class="btn-small" onclick="window.open('${d.url_drive}')">⬇️ Bajar</button></div></div>`).join('');
     } catch (e) { list.innerHTML = '<p>Sin documentos.</p>'; }
 }
@@ -166,15 +178,19 @@ async function renderDocuments() {
 async function handleFileUpload(event) {
     const file = event.target.files[0]; if (!file) return;
     document.getElementById('loader').style.display = 'flex';
-    const driveUrl = await CortijoAPI.uploadToDrive(file, currentDocYear);
-    const data = { id: Date.now(), name: file.name, type: file.type.includes('pdf') ? 'pdf' : 'image', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: driveUrl };
-    await CortijoAPI.addDocument(data);
-    renderDocuments();
+    try {
+        const driveUrl = await CortijoAPI.uploadToDrive(file, currentDocYear);
+        const data = { id: Date.now(), name: file.name, type: file.type.includes('pdf') ? 'pdf' : 'image', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: driveUrl };
+        await CortijoAPI.addDocument(data);
+        renderDocuments();
+    } catch (e) { alert(e.message); }
     document.getElementById('loader').style.display = 'none';
 }
 
 function previewDocument(url) {
-    const id = url.match(/[-\w]{25,}/)[0];
+    const match = url.match(/[-\w]{25,}/);
+    if (!match) return;
+    const id = match[0];
     openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${id}/preview" style="width:100%;height:500px;border:none;"></iframe>`);
 }
 
@@ -183,7 +199,7 @@ function changeTaskYear(year) { currentTaskYear = year; document.getElementById(
 
 async function renderTasks() {
     const lists = { waiting: document.getElementById('list-waiting'), running: document.getElementById('list-running'), completed: document.getElementById('list-completed') };
-    Object.values(lists).forEach(l => l.innerHTML = 'Cargando...');
+    Object.values(lists).forEach(l => l.innerHTML = '...');
     try {
         cachedTasks = await CortijoAPI.getTasks(currentTaskYear);
         Object.values(lists).forEach(l => l.innerHTML = '');
@@ -192,18 +208,25 @@ async function renderTasks() {
             counts[task.status]++;
             const card = document.createElement('div');
             card.className = 'task-card'; card.dataset.id = task.id;
-            card.innerHTML = `<div style="display:flex;justify-content:space-between;"><span>${task.title}</span><span class="priority-${task.priority}">${task.priority}</span></div><div class="task-meta">Por: ${task.user}</div>`;
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <span class="task-title" onclick="openEditTaskModal(${task.id})">${task.title}</span>
+                    <span class="priority-badge ${task.priority}">${task.priority}</span>
+                </div>
+                <div class="task-meta">Por: ${task.user}</div>
+            `;
             lists[task.status].appendChild(card);
         });
         Object.keys(counts).forEach(s => document.getElementById(`count-${s}`).textContent = counts[s]);
         initSortable();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) { Object.values(lists).forEach(l => l.innerHTML = 'Error'); }
 }
 
 function initSortable() {
     ['list-waiting', 'list-running', 'list-completed'].forEach(id => {
         new Sortable(document.getElementById(id), {
-            group: 'tasks', onEnd: async (evt) => {
+            group: 'tasks', animation: 150, onEnd: async (evt) => {
                 const taskId = evt.item.dataset.id;
                 const newStatus = evt.to.id.replace('list-', '');
                 await CortijoAPI.updateTask(taskId, { status: newStatus });
@@ -214,12 +237,56 @@ function initSortable() {
 }
 
 function openTaskModal() {
-    openModal('Nueva Tarea', `<form id="t-form"><div class="form-group"><label>Tarea</label><input type="text" id="tn" required></div><div class="form-group"><label>Prioridad</label><select id="tp"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option></select></div><button type="submit" class="btn-primary" style="width:100%">Crear</button></form>`);
+    openModal('Nueva Tarea', `
+        <form id="t-form">
+            <div class="form-group"><label>Tarea</label><input type="text" id="tn" required placeholder="¿Qué hay que hacer?"></div>
+            <div class="form-group"><label>Prioridad</label>
+                <select id="tp">
+                    <option value="low">Baja</option>
+                    <option value="medium" selected>Media</option>
+                    <option value="high">Alta</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%">Crear Tarea</button>
+        </form>
+    `);
     document.getElementById('t-form').onsubmit = async (e) => {
         e.preventDefault();
         await CortijoAPI.addTask({ id: Date.now(), title: document.getElementById('tn').value, status: 'waiting', user: currentUser.name, priority: document.getElementById('tp').value, year: currentTaskYear });
         renderTasks(); closeModal();
     };
+}
+
+function openEditTaskModal(id) {
+    const task = cachedTasks.find(t => t.id == id);
+    openModal('Editar Tarea', `
+        <form id="et-form">
+            <div class="form-group"><label>Título</label><input type="text" id="etn" value="${task.title}" required></div>
+            <div class="form-group"><label>Prioridad</label>
+                <select id="etp">
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Media</option>
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>Alta</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:1rem;">
+                <button type="submit" class="btn-primary" style="flex:1">Guardar</button>
+                <button type="button" onclick="confirmDeleteTask(${id})" class="btn-danger" style="flex:1">Eliminar</button>
+            </div>
+        </form>
+    `);
+    document.getElementById('et-form').onsubmit = async (e) => {
+        e.preventDefault();
+        await CortijoAPI.updateTask(id, { title: document.getElementById('etn').value, priority: document.getElementById('etp').value });
+        renderTasks(); closeModal();
+    };
+}
+
+async function confirmDeleteTask(id) {
+    if (confirm("¿Seguro que quieres borrar esta tarea?")) {
+        await CortijoAPI.deleteTask(id);
+        renderTasks(); closeModal();
+    }
 }
 
 // --- AUTH ---
@@ -239,4 +306,8 @@ function showAuthenticatedUI() {
 function signOut() { localStorage.removeItem('user'); location.reload(); }
 function openModal(t, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('modal-container').classList.remove('hidden'); }
 function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
-function renderProfile() { document.getElementById('profile-name').textContent = currentUser.name; document.getElementById('profile-avatar').src = currentUser.avatar; }
+function renderProfile() {
+    document.getElementById('profile-name').textContent = currentUser.name;
+    document.getElementById('profile-email').textContent = currentUser.email;
+    document.getElementById('profile-avatar').src = currentUser.avatar;
+}
