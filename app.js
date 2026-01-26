@@ -116,7 +116,7 @@ function deleteBooking(id) { if (confirm("¿Borrar reserva?")) { bookings = book
 
 // --- EXPENSES ---
 function changeExpYear(year) {
-    currentExpYear = year;
+    currentExpYear = parseInt(year);
     const el = document.getElementById('exp-year-display');
     if (el) el.textContent = year;
     renderExpenses();
@@ -130,7 +130,10 @@ async function renderExpenses() {
         cachedExpenses = await CortijoAPI.getExpenses({ year: currentExpYear });
         if (cachedExpenses.error) throw new Error(cachedExpenses.error);
         filterExpenses(document.getElementById('expense-search')?.value || '');
-    } catch (e) { list.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`; }
+    } catch (e) {
+        console.error("Error renderExpenses:", e);
+        list.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`;
+    }
 }
 
 function filterExpenses(query) {
@@ -192,12 +195,33 @@ function changeDocYear(year) { currentDocYear = year; const el = document.getEle
 async function renderDocuments() {
     const list = document.getElementById('document-list');
     if (!list) return;
-    list.innerHTML = '<p>Cargando archivos...</p>';
+    list.innerHTML = '<p>Cargando archivos compartidos...</p>';
     try {
         const docs = await CortijoAPI.getDocuments(currentDocYear);
-        if (!docs.length) { list.innerHTML = '<p style="grid-column:1/-1;text-align:center;">Carpeta vacía.</p>'; return; }
-        list.innerHTML = docs.map(d => `<div class="document-item"><span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span><h4>${d.name}</h4><p>${d.size} • ${formatDateDisplay(d.date)}</p><div style="display:flex;gap:5px;margin-top:10px;"><button class="btn-small" onclick="previewDocument('${d.url_drive}')">👁️ Ver</button><button class="btn-small" onclick="window.open('${d.url_drive}')">⬇️ Bajar</button></div></div>`).join('');
-    } catch (e) { list.innerHTML = '<p>Error cargando documentos.</p>'; }
+        if (docs.error) throw new Error(docs.error);
+
+        if (!docs || docs.length === 0) {
+            list.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:2rem;">No hay documentos en esta carpeta anual.</p>';
+            return;
+        }
+
+        list.innerHTML = docs.map(d => {
+            const url = d.url_drive || '';
+            return `
+            <div class="document-item">
+                <span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span>
+                <h4>${d.name}</h4>
+                <p>${d.size} • ${formatDateDisplay(d.date)}</p>
+                <div class="doc-item-actions" style="margin-top: 10px; display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn-small" onclick="previewDocument('${url}')">👁️ Ver</button>
+                    <button class="btn-small" onclick="downloadDocument('${url}')">⬇️ Bajar</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error("Error renderDocuments:", e);
+        list.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+    }
 }
 
 async function handleFileUpload(event) {
@@ -214,9 +238,29 @@ async function handleFileUpload(event) {
 }
 
 function previewDocument(url) {
+    if (!url) return alert("Este documento no tiene enlace de visualización.");
     const match = url.match(/[-\w]{25,}/);
-    if (!match) return alert("URL no válida");
-    openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${match[0]}/preview" style="width:100%;height:500px;border:none;"></iframe>`);
+    if (!match) return window.open(url, '_blank');
+
+    const previewUrl = `https://drive.google.com/file/d/${match[0]}/preview`;
+    openModal('Vista Previa', `
+        <div style="text-align:center;">
+            <iframe src="${previewUrl}" style="width:100%;height:500px;border:none;border-radius:12px;background:#f0f0f0;"></iframe>
+            <div style="margin-top:1rem;">
+                <a href="${url}" target="_blank" class="btn-primary" style="text-decoration:none;display:inline-block;padding:8px 16px;">Ver en Google Drive</a>
+            </div>
+        </div>
+    `);
+}
+
+function downloadDocument(url) {
+    if (!url) return alert("URL no válida.");
+    const match = url.match(/[-\w]{25,}/);
+    if (match) {
+        window.open(`https://drive.google.com/uc?export=download&id=${match[0]}`, '_blank');
+    } else {
+        window.open(url, '_blank');
+    }
 }
 
 // --- TASKS ---
@@ -250,12 +294,39 @@ function initSortable() {
     });
 }
 function openTaskModal() {
-    openModal('Nueva Tarea', `<form id="t-form"><div class="form-group"><label>Tarea</label><input type="text" id="tn" required></div><div class="form-group"><label>Prioridad</label><select id="tp"><option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option></select></div><button type="submit" class="btn-primary" style="width:100%">Crear</button></form>`);
-    document.getElementById('t-form').onsubmit = (e) => {
-        e.preventDefault();
-        tasks.push({ id: Date.now(), title: document.getElementById('tn').value, status: 'waiting', user: currentUser.name, priority: document.getElementById('tp').value, year: currentTaskYear });
-        renderTasks(); closeModal();
-    };
+    if (!currentUser) return alert("Error: Inicia sesión de nuevo.");
+    openModal('Nueva Tarea', `
+        <form id="t-form">
+            <div class="form-group"><label>Tarea</label><input type="text" id="tn" required placeholder="Ej: Pintar fachada"></div>
+            <div class="form-group"><label>Prioridad</label>
+                <select id="tp">
+                    <option value="low">Baja</option>
+                    <option value="medium" selected>Media</option>
+                    <option value="high">Alta</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:1rem;">Crear Ahora</button>
+        </form>
+    `);
+
+    const form = document.getElementById('t-form');
+    if (form) {
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const title = document.getElementById('tn').value;
+            tasks.push({
+                id: Date.now(),
+                title: title,
+                status: 'waiting',
+                user: currentUser.name,
+                priority: document.getElementById('tp').value,
+                year: currentTaskYear
+            });
+            addAudit(`Creó tarea: ${title}`);
+            renderTasks();
+            closeModal();
+        };
+    }
 }
 function editTask(id) {
     const t = tasks.find(x => x.id === id);
