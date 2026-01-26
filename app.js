@@ -278,7 +278,9 @@ async function renderTasks() {
                     subs = t.subtasks;
                 }
             } catch (e) { console.warn("Error parseando subtasks:", e); }
-            return { ...t, subtasks: subs };
+            // Asegurar que cada subtask tenga campo notes
+            subs = subs.map(s => typeof s === 'string' ? { text: s, completed: false, notes: '' } : { notes: '', ...s });
+            return { ...t, subtasks: subs, notes: t.notes || '' };
         });
 
         Object.values(lists).forEach(l => l.innerHTML = '');
@@ -297,13 +299,17 @@ async function renderTasks() {
                     <span class="task-title" onclick="openEditTaskModal(${task.id})">${task.title}</span>
                     <span class="priority-badge ${task.priority}">${task.priority}</span>
                 </div>
+                ${task.notes ? `<p class="task-card-notes" style="font-size:0.8rem; color:var(--text-muted); font-style:italic; margin: 4px 0 8px 0;">"${task.notes}"</p>` : ''}
                 ${task.subtasks.length > 0 ? `
                 <div class="card-subtasks" style="margin: 10px 0; display: grid; gap: 6px;">
                     ${task.subtasks.map((s, idx) => `
-                        <label class="subtask-label" style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; background:rgba(0,0,0,0.02); padding:4px 8px; border-radius:6px;">
-                            <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateSubtaskStatus(${task.id}, ${idx}, this.checked)" style="width:14px; height:14px;">
-                            <span style="${s.completed ? 'text-decoration:line-through; opacity:0.5;' : ''}">${s.text}</span>
-                        </label>
+                        <div class="subtask-item-container">
+                            <label class="subtask-label" style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; background:rgba(0,0,0,0.02); padding:4px 8px; border-radius:6px;">
+                                <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateSubtaskStatus(${task.id}, ${idx}, this.checked)" style="width:14px; height:14px;">
+                                <span style="${s.completed ? 'text-decoration:line-through; opacity:0.5;' : ''}">${s.text}</span>
+                            </label>
+                            ${s.notes ? `<div style="font-size:0.75rem; color:var(--text-muted); padding-left:24px; margin-top:-2px;">• ${s.notes}</div>` : ''}
+                        </div>
                     `).join('')}
                 </div>` : ''}
                 <div class="task-meta">Por: ${task.user}</div>
@@ -338,6 +344,9 @@ function openTaskModal() {
     openModal('Nueva Tarea', `
         <form id="t-form">
             <div class="form-group"><label>Tarea</label><input type="text" id="tn" required placeholder="¿Qué hay que hacer?"></div>
+            <div class="form-group"><label>Observaciones de la Tarea</label>
+                <textarea id="tnotes" placeholder="Detalles adicionales..." rows="2"></textarea>
+            </div>
             <div class="form-group"><label>Subprocesos (uno por línea)</label>
                 <textarea id="tsubs" placeholder="Ej:\nComprar material\nLlamar al fontanero" rows="3"></textarea>
             </div>
@@ -354,11 +363,12 @@ function openTaskModal() {
     document.getElementById('t-form').onsubmit = async (e) => {
         e.preventDefault();
         const subLines = document.getElementById('tsubs').value.split('\n').filter(l => l.trim() !== '');
-        const subtasks = subLines.map(text => ({ text: text.trim(), completed: false }));
+        const subtasks = subLines.map(text => ({ text: text.trim(), completed: false, notes: '' }));
 
         await CortijoAPI.addTask({
             id: Date.now(),
             title: document.getElementById('tn').value,
+            notes: document.getElementById('tnotes').value,
             status: 'waiting',
             user: currentUser.name,
             priority: document.getElementById('tp').value,
@@ -377,17 +387,24 @@ function openEditTaskModal(id) {
         <form id="et-form">
             <div class="form-group"><label>Título</label><input type="text" id="etn" value="${task.title}" required></div>
             
+            <div class="form-group"><label>Observaciones</label>
+                <textarea id="etnotes" rows="2" style="font-size:0.9rem;">${task.notes || ''}</textarea>
+            </div>
+
             <div class="subtasks-editor" style="margin: 1rem 0;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
                     <label style="margin:0;">Subprocesos</label>
                     <button type="button" class="btn-small" onclick="addNewSubtaskField()">+ Añadir</button>
                 </div>
-                <div id="sub-edit-list" style="display:grid; gap:8px;">
+                <div id="sub-edit-list" style="display:grid; gap:12px;">
                     ${task.subtasks.map((s, idx) => `
-                        <div class="subtask-edit-row" style="display:flex; align-items:center; gap:8px;">
-                            <input type="checkbox" class="sub-check" ${s.completed ? 'checked' : ''} style="width:18px;height:18px;">
-                            <input type="text" class="sub-text" value="${s.text}" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nombre del subproceso">
-                            <button type="button" class="btn-icon" onclick="this.parentElement.remove()" style="font-size:1rem;">🗑️</button>
+                        <div class="subtask-edit-row" style="background:var(--bg-main); padding:10px; border-radius:10px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                                <input type="checkbox" class="sub-check" ${s.completed ? 'checked' : ''} style="width:18px;height:18px;">
+                                <input type="text" class="sub-text" value="${s.text}" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nombre del subproceso">
+                                <button type="button" class="btn-icon" onclick="this.closest('.subtask-edit-row').remove()" style="font-size:1rem;">🗑️</button>
+                            </div>
+                            <input type="text" class="sub-obs" value="${s.notes || ''}" style="width:100%; border:none; background:transparent; border-bottom:1px dashed var(--border); font-size:0.8rem; padding:4px;" placeholder="Observaciones de este subproceso...">
                         </div>
                     `).join('')}
                 </div>
@@ -414,11 +431,13 @@ function openEditTaskModal(id) {
         const subRows = document.querySelectorAll('.subtask-edit-row');
         const updatedSubtasks = Array.from(subRows).map(row => ({
             text: row.querySelector('.sub-text').value.trim(),
-            completed: row.querySelector('.sub-check').checked
+            completed: row.querySelector('.sub-check').checked,
+            notes: row.querySelector('.sub-obs').value.trim()
         })).filter(s => s.text !== "");
 
         await CortijoAPI.updateTask(id, {
             title: document.getElementById('etn').value,
+            notes: document.getElementById('etnotes').value,
             priority: document.getElementById('etp').value,
             subtasks: JSON.stringify(updatedSubtasks)
         });
@@ -432,11 +451,14 @@ function addNewSubtaskField() {
     const container = document.getElementById('sub-edit-list');
     const div = document.createElement('div');
     div.className = 'subtask-edit-row';
-    div.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    div.style.cssText = 'background:var(--bg-main); padding:10px; border-radius:10px; border:1px solid var(--border);';
     div.innerHTML = `
-        <input type="checkbox" class="sub-check" style="width:18px;height:18px;">
-        <input type="text" class="sub-text" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nuevo subproceso">
-        <button type="button" class="btn-icon" onclick="this.parentElement.remove()" style="font-size:1rem;">🗑️</button>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <input type="checkbox" class="sub-check" style="width:18px;height:18px;">
+            <input type="text" class="sub-text" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nuevo subproceso">
+            <button type="button" class="btn-icon" onclick="this.closest('.subtask-edit-row').remove()" style="font-size:1rem;">🗑️</button>
+        </div>
+        <input type="text" class="sub-obs" style="width:100%; border:none; background:transparent; border-bottom:1px dashed var(--border); font-size:0.8rem; padding:4px;" placeholder="Observaciones de este subproceso...">
     `;
     container.appendChild(div);
 }
