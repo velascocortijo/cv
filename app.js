@@ -162,7 +162,12 @@ function filterExpenses(query) {
             <td data-label="Concepto" onclick="openEditExpenseModal(${e.id})" style="cursor:pointer;">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank" onclick="event.stopPropagation()">📎</a>` : ''}</td>
             <td data-label="Usuario">${e.user_id}</td>
             <td data-label="Importe" class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td>
-            <td data-label="Acciones"><button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')">🗑️</button></td>
+            <td data-label="Acciones">
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-icon" onclick="openEditExpenseModal(${e.id})" title="Editar">✏️</button>
+                    <button class="btn-icon" onclick="confirmDeleteExpense('${e.id}')" title="Eliminar">🗑️</button>
+                </div>
+            </td>
         </tr>`;
     }).join('');
     document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
@@ -397,11 +402,25 @@ function openTaskModal() {
         <form id="t-form">
             <div class="form-group"><label>Tarea</label><input type="text" id="tn" required placeholder="¿Qué hay que hacer?"></div>
             <div class="form-group"><label>Observaciones de la Tarea</label>
-                <textarea id="tnotes" placeholder="Detalles adicionales..." rows="2"></textarea>
+                <textarea id="tnotes" placeholder="Detalles generales..." rows="2"></textarea>
             </div>
-            <div class="form-group"><label>Subprocesos (uno por línea)</label>
-                <textarea id="tsubs" placeholder="Ej:\nComprar material\nLlamar al fontanero" rows="3"></textarea>
+            
+            <div class="subtasks-editor" style="margin: 1rem 0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+                    <label style="margin:0;">Subprocesos</label>
+                    <button type="button" class="btn-small" onclick="addNewSubtaskFieldCreate()">+ Añadir</button>
+                </div>
+                <div id="sub-create-list" style="display:grid; gap:12px;">
+                    <div class="subtask-edit-row" style="background:var(--bg-main); padding:10px; border-radius:10px; border:1px solid var(--border);">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                            <input type="checkbox" class="sub-check" style="width:18px;height:18px;">
+                            <input type="text" class="sub-text" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nombre del subproceso" required>
+                        </div>
+                        <input type="text" class="sub-obs" style="width:100%; border:none; background:transparent; border-bottom:1px dashed var(--border); font-size:0.8rem; padding:4px;" placeholder="Observaciones de este subproceso...">
+                    </div>
+                </div>
             </div>
+
             <div class="form-group"><label>Prioridad</label>
                 <select id="tp">
                     <option value="low">Baja</option>
@@ -414,8 +433,13 @@ function openTaskModal() {
     `);
     document.getElementById('t-form').onsubmit = async (e) => {
         e.preventDefault();
-        const subLines = document.getElementById('tsubs').value.split('\n').filter(l => l.trim() !== '');
-        const subtasks = subLines.map(text => ({ text: text.trim(), completed: false, notes: '' }));
+
+        const subRows = document.querySelectorAll('#sub-create-list .subtask-edit-row');
+        const subtasks = Array.from(subRows).map(row => ({
+            text: row.querySelector('.sub-text').value.trim(),
+            completed: row.querySelector('.sub-check').checked,
+            notes: row.querySelector('.sub-obs').value.trim()
+        })).filter(s => s.text !== "");
 
         await CortijoAPI.addTask({
             id: Date.now(),
@@ -429,6 +453,22 @@ function openTaskModal() {
         });
         renderTasks(); closeModal();
     };
+}
+
+function addNewSubtaskFieldCreate() {
+    const container = document.getElementById('sub-create-list');
+    const div = document.createElement('div');
+    div.className = 'subtask-edit-row';
+    div.style.cssText = 'background:var(--bg-main); padding:10px; border-radius:10px; border:1px solid var(--border);';
+    div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <input type="checkbox" class="sub-check" style="width:18px;height:18px;">
+            <input type="text" class="sub-text" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border);" placeholder="Nombre del subproceso" required>
+            <button type="button" class="btn-icon" onclick="this.closest('.subtask-edit-row').remove()" style="font-size:1rem;">🗑️</button>
+        </div>
+        <input type="text" class="sub-obs" style="width:100%; border:none; background:transparent; border-bottom:1px dashed var(--border); font-size:0.8rem; padding:4px;" placeholder="Observaciones de este subproceso...">
+    `;
+    container.appendChild(div);
 }
 
 function openEditTaskModal(id) {
