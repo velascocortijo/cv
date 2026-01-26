@@ -133,9 +133,14 @@ async function renderExpenses() {
     if (!list) return;
     list.innerHTML = '<tr><td colspan="5">Cargando...</td></tr>';
     try {
-        cachedExpenses = await CortijoAPI.getExpenses(currentExpYear);
+        const data = await CortijoAPI.getExpenses(currentExpYear);
+        if (data.error) throw new Error(data.error);
+        cachedExpenses = data;
         filterExpenses(document.getElementById('expense-search')?.value || '');
-    } catch (e) { list.innerHTML = '<tr><td colspan="5" style="color:red">Error al cargar datos</td></tr>'; }
+    } catch (e) {
+        console.error("renderExpenses Error:", e);
+        list.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}. Verifica que ejecutaste 'authorize' en Google Script.</td></tr>`;
+    }
 }
 
 function filterExpenses(query) {
@@ -167,12 +172,17 @@ function changeDocYear(year) { currentDocYear = year; document.getElementById('d
 
 async function renderDocuments() {
     const list = document.getElementById('document-list');
+    if (!list) return;
     list.innerHTML = '<p>Cargando...</p>';
     try {
-        const docs = await CortijoAPI.getDocuments(currentDocYear);
-        if (!docs.length) { list.innerHTML = '<p>No hay documentos para este año.</p>'; return; }
-        list.innerHTML = docs.map(d => `<div class="document-item"><span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span><h4>${d.name}</h4><p>${d.size} • ${formatDateDisplay(d.date)}</p><div style="display:flex;gap:5px;margin-top:10px;"><button class="btn-small" onclick="previewDocument('${d.url_drive}')">👁️ Ver</button><button class="btn-small" onclick="window.open('${d.url_drive}')">⬇️ Bajar</button></div></div>`).join('');
-    } catch (e) { list.innerHTML = '<p>Sin documentos.</p>'; }
+        const data = await CortijoAPI.getDocuments(currentDocYear);
+        if (data.error) throw new Error(data.error);
+        if (!data || !data.length) { list.innerHTML = '<p>No hay documentos para este año.</p>'; return; }
+        list.innerHTML = data.map(d => `<div class="document-item"><span class="doc-icon">${d.type === 'pdf' ? '📄' : '🖼️'}</span><h4>${d.name}</h4><p>${d.size} • ${formatDateDisplay(d.date)}</p><div style="display:flex;gap:5px;margin-top:10px;"><button class="btn-small" onclick="previewDocument('${d.url_drive}')">👁️ Ver</button><button class="btn-small" onclick="window.open('${d.url_drive}')">⬇️ Bajar</button></div></div>`).join('');
+    } catch (e) {
+        console.error("renderDocuments Error:", e);
+        list.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+    }
 }
 
 async function handleFileUpload(event) {
