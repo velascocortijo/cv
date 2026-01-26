@@ -202,10 +202,17 @@ async function renderTasks() {
     Object.values(lists).forEach(l => l.innerHTML = '...');
     try {
         const data = await CortijoAPI.getTasks(currentTaskYear);
-        cachedTasks = data.map(t => ({
-            ...t,
-            subtasks: t.subtasks ? JSON.parse(t.subtasks) : []
-        }));
+        cachedTasks = data.map(t => {
+            let subs = [];
+            try {
+                if (t.subtasks && typeof t.subtasks === 'string' && t.subtasks.trim() !== "") {
+                    subs = JSON.parse(t.subtasks);
+                } else if (Array.isArray(t.subtasks)) {
+                    subs = t.subtasks;
+                }
+            } catch (e) { console.warn("Error parseando subtasks:", e); }
+            return { ...t, subtasks: subs };
+        });
 
         Object.values(lists).forEach(l => l.innerHTML = '');
         let counts = { waiting: 0, running: 0, completed: 0 };
