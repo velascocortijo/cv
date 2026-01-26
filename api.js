@@ -5,9 +5,9 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbwHTYtmMDzOaV15jn7NoS36mwpoz7irgVileX6eIThjNySE4ioNH-QwFt5vTdbuyWfN/exec';
 
 const API = {
-    async getExpenses(filters = {}) {
-        const queryParams = new URLSearchParams({ action: 'list', ...filters }).toString();
-        const response = await fetch(`${API_URL}?${queryParams}`);
+    // --- GASTOS ---
+    async getExpenses(year) {
+        const response = await fetch(`${API_URL}?action=list&year=${year}`);
         return await response.json();
     },
 
@@ -16,7 +16,7 @@ const API = {
         if (fileBlob) {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
-        const payload = { action: 'create', ...expenseData, url_drive: urlDrive };
+        const payload = { ...expenseData, url_drive: urlDrive };
         const response = await fetch(API_URL + '?action=create', {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -25,12 +25,8 @@ const API = {
         return await response.json();
     },
 
-    async updateExpense(expenseData, fileBlob = null, folderName = null) {
-        let urlDrive = expenseData.url_drive || '';
-        if (fileBlob) {
-            urlDrive = await this.uploadToDrive(fileBlob, folderName);
-        }
-        const payload = { action: 'update', ...expenseData, url_drive: urlDrive };
+    async updateExpense(id, data) {
+        const payload = { id, ...data };
         const response = await fetch(API_URL + '?action=update', {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -39,21 +35,16 @@ const API = {
         return await response.json();
     },
 
-    async deleteExpense(id, userId) {
-        const payload = { action: 'delete', id, user_id: userId };
+    async deleteExpense(id) {
         const response = await fetch(API_URL + '?action=delete', {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         return await response.json();
     },
 
-    async getBalance() {
-        const response = await fetch(`${API_URL}?action=balance`);
-        return await response.json();
-    },
-
+    // --- DOCUMENTOS ---
     async getDocuments(year) {
         const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`);
         return await response.json();
@@ -62,9 +53,9 @@ const API = {
     async addDocument(docData, fileBlob = null) {
         let urlDrive = '';
         if (fileBlob) {
-            urlDrive = await this.uploadToDrive(fileBlob);
+            urlDrive = await this.uploadToDrive(fileBlob, docData.year);
         }
-        const payload = { action: 'addDocument', ...docData, url_drive: urlDrive };
+        const payload = { ...docData, url_drive: urlDrive };
         const response = await fetch(API_URL + '?action=addDocument', {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -73,13 +64,46 @@ const API = {
         return await response.json();
     },
 
+    // --- TAREAS (KANBAN) ---
+    async getTasks(year) {
+        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`);
+        return await response.json();
+    },
+
+    async addTask(taskData) {
+        const response = await fetch(API_URL + '?action=addTask', {
+            method: 'POST',
+            body: JSON.stringify(taskData),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    async updateTask(id, data) {
+        const response = await fetch(API_URL + '?action=updateTask', {
+            method: 'POST',
+            body: JSON.stringify({ id, ...data }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    async deleteTask(id) {
+        const response = await fetch(API_URL + '?action=deleteTask', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    // --- DRIVE & OTROS ---
     async uploadToDrive(file, folderName = null) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async () => {
                 const base64 = reader.result;
                 const payload = {
-                    action: 'upload',
                     base64: base64,
                     fileName: file.name,
                     folderName: folderName
@@ -96,6 +120,11 @@ const API = {
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
+    },
+
+    async getBalance() {
+        const response = await fetch(`${API_URL}?action=balance`);
+        return await response.json();
     }
 };
 
