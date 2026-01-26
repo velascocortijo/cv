@@ -480,11 +480,27 @@ async function confirmDeleteTask(id) {
 }
 
 // --- AUTH ---
-function handleCredentialResponse(r) {
+async function handleCredentialResponse(r) {
     const p = JSON.parse(atob(r.credential.split('.')[1]));
-    currentUser = { name: p.name, avatar: p.picture, email: p.email };
-    localStorage.setItem('user', JSON.stringify(currentUser));
-    showAuthenticatedUI();
+    const email = p.email;
+
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const auth = await CortijoAPI.checkEmail(email);
+
+        if (auth.authorized) {
+            currentUser = { name: p.name, avatar: p.picture, email: p.email };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            showAuthenticatedUI();
+        } else {
+            alert("Acceso Denegado: Tu correo (" + email + ") no está en la lista de usuarios autorizados. Contacta con el administrador del Cortijo.");
+            signOut();
+        }
+    } catch (e) {
+        alert("Error verificando permisos: " + e.message);
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
 }
 function showAuthenticatedUI() {
     ['login-section', 'auth-container'].forEach(id => document.getElementById(id).classList.add('hidden'));

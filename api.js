@@ -136,6 +136,11 @@ const API = {
     async getBalance() {
         const response = await fetch(`${API_URL}?action=balance`);
         return await response.json();
+    },
+
+    async checkEmail(email) {
+        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`);
+        return await response.json();
     }
 };
 
