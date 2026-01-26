@@ -202,6 +202,12 @@ async function renderTasks() {
     Object.values(lists).forEach(l => l.innerHTML = '...');
     try {
         const data = await CortijoAPI.getTasks(currentTaskYear);
+
+        if (!Array.isArray(data)) {
+            console.error("Respuesta del servidor no es un array:", data);
+            throw new Error((data && data.error) ? data.error : "Error desconocido al obtener tareas");
+        }
+
         cachedTasks = data.map(t => {
             let subs = [];
             try {
