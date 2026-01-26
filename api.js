@@ -16,7 +16,7 @@ const API = {
         if (fileBlob) {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
-        const payload = { ...expenseData, url_drive: urlDrive };
+        const payload = { ...expenseData, url_drive: urlDrive || expenseData.url_drive };
         const response = await fetch(API_URL + '?action=create', {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -50,18 +50,29 @@ const API = {
         return await response.json();
     },
 
-    async addDocument(docData, fileBlob = null) {
-        let urlDrive = '';
-        if (fileBlob) {
-            urlDrive = await this.uploadToDrive(fileBlob, docData.year);
-        }
-        const payload = { ...docData, url_drive: urlDrive };
-        const response = await fetch(API_URL + '?action=addDocument', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    // SUBIDA ATÓMICA (Sube archivo y guarda datos en un solo paso para evitar pérdida de URL)
+    async uploadAndRecordDocument(docData, file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64 = reader.result;
+                const payload = {
+                    ...docData,
+                    base64: base64,
+                    fileName: file.name
+                };
+                const res = await fetch(API_URL + '?action=uploadAndRecord', {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                if (result.success) resolve(result);
+                else reject(new Error(result.error || 'Error en el servidor'));
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
-        return await response.json();
     },
 
     // --- TAREAS (KANBAN) ---
@@ -97,7 +108,7 @@ const API = {
         return await response.json();
     },
 
-    // --- DRIVE & OTROS ---
+    // --- DRIVE (Para Gastos) ---
     async uploadToDrive(file, folderName = null) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();

@@ -211,15 +211,29 @@ async function renderDocuments() {
 }
 
 async function handleFileUpload(event) {
-    const file = event.target.files[0]; if (!file) return;
+    const file = event.target.files[0];
+    if (!file) return;
+
     document.getElementById('loader').style.display = 'flex';
     try {
-        const driveUrl = await CortijoAPI.uploadToDrive(file, currentDocYear);
-        const data = { id: Date.now(), name: file.name, type: file.type.split('/')[1] || 'doc', size: (file.size / 1024 / 1024).toFixed(1) + 'MB', date: new Date().toISOString(), year: currentDocYear, url_drive: driveUrl };
-        await CortijoAPI.addDocument(data);
+        const docData = {
+            id: Date.now(),
+            name: file.name,
+            type: file.type.split('/')[1] || 'doc',
+            size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+            date: new Date().toISOString(),
+            year: currentDocYear
+        };
+
+        await CortijoAPI.uploadAndRecordDocument(docData, file);
+        alert("¡Documento subido y registrado con éxito!");
         renderDocuments();
-    } catch (e) { alert("Error al subir: " + e.message); }
-    document.getElementById('loader').style.display = 'none';
+    } catch (e) {
+        alert("Fallo al subir: " + e.message);
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+        event.target.value = ''; // Limpiar input
+    }
 }
 
 function previewDocument(url) {
