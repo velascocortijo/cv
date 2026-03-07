@@ -719,7 +719,8 @@ async function handleCredentialResponse(r) {
             signOut();
         }
     } catch (e) {
-        alert("Error verificando permisos: " + e.message);
+        alert("Error verificando permisos (Failed to fetch).\n\nDetalles: " + e.message + "\n\nIMPORTANTE: Asegúrate de que:\n1. Has desplegado el Google Script como 'Aplicación Web'.\n2. 'Quién tiene acceso' está configurado como 'Cualquier persona'.\n3. La URL en api.js termina en /exec.");
+        console.error("Fetch Error:", e);
     } finally {
         document.getElementById('loader').style.display = 'none';
     }
