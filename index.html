@@ -32,6 +32,7 @@
             <nav id="main-nav" class="hidden">
                 <button onclick="showSection('calendar')">Calendario</button>
                 <button onclick="showSection('expenses')">Gastos</button>
+                <button onclick="showSection('income')">Ingresos</button>
                 <button onclick="showSection('tasks')">Tareas</button>
                 <button onclick="showSection('documents')">Documentos</button>
                 <button onclick="showSection('profile')">Perfil</button>
@@ -115,12 +116,52 @@
                         <tr>
                             <th>Fecha</th>
                             <th>Concepto</th>
-                            <th>Usuario</th>
                             <th>Importe</th>
+                            <th>Pagado por</th>
+                            <th>Notas</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="expenses-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Income Section -->
+        <section id="income-section" class="content-section hidden">
+            <div class="section-header">
+                <div class="header-with-filter">
+                    <h2>Gestión de Ingresos <span id="inc-year-display">2026</span></h2>
+                    <select id="inc-year-selector" onchange="changeIncYear(this.value)">
+                        <!-- Dinámico vía JS -->
+                    </select>
+                </div>
+                <div class="balance-cards">
+                    <div class="card balance-card">
+                        <span>Total Ingresos (Año)</span>
+                        <h3 id="total-income">0.00 €</h3>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="openIncomeModal()">+ Añadir Ingreso</button>
+            </div>
+
+            <div class="table-container">
+                <div class="table-actions">
+                    <input type="text" id="income-search" placeholder="Buscar ingresos...">
+                    <button class="btn-secondary" onclick="exportIncome()">Exportar CSV</button>
+                </div>
+                <table id="income-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Categoría</th>
+                            <th>Importe</th>
+                            <th>Recibido de</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="income-body"></tbody>
                 </table>
             </div>
         </section>
@@ -218,5 +259,3 @@
 </body>
 
 </html>
-
-
