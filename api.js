@@ -2,7 +2,7 @@
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbztlmWEz8_z-kp7PU4eGfBpkFxbxXm0-Z1GoljsIZlbSYkLPlP4_7l7tpQ_Zh0vupyh/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxXaJw2P2D5ThKSBT7c-oEl2fd7lDkVRJOumnHD6q7ps6HazYoDJKbv3D2iOtRe_SiR/exec';
 
 const API = {
     // --- GASTOS ---
@@ -202,3 +202,4 @@ const API = {
 };
 
 window.CortijoAPI = API;
+
