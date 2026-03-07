@@ -3,6 +3,8 @@ const CONFIG = {
     GOOGLE_CLIENT_ID: "699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com",
     SPREADSHEET_ID: "1L67JCrwGVxGuGghFgoZxM_zIXs0WP6bW4vjsOInvxu0",
     DRIVE_FOLDER_ID: "1_kocEDazNFHg191c9obZNu58ivmXimqL",
+    FAMILY_MEMBERS: ["Juan", "Elena", "Admin", "Primo 1", "Primo 2", "Primo 3"],
+    INCOME_CATEGORIES: ["Alquiler", "Aportación Familiar", "Subvención", "Otros"],
     AUTHORIZED_EMAILS: [
         "admin@example.com", // Tú (Admin)
         "primo1@example.com",
