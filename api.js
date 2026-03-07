@@ -44,6 +44,45 @@ const API = {
         return await response.json();
     },
 
+    // --- INGRESOS ---
+    async getIncome(year) {
+        const response = await fetch(`${API_URL}?action=listIncome&year=${year}`);
+        return await response.json();
+    },
+
+    async createIncome(incomeData, fileBlob = null, folderName = null) {
+        let urlDrive = '';
+        if (fileBlob) {
+            urlDrive = await this.uploadToDrive(fileBlob, folderName);
+        }
+        const payload = { ...incomeData, url_drive: urlDrive || incomeData.url_drive };
+        const response = await fetch(API_URL + '?action=addIncome', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    async updateIncome(id, data) {
+        const payload = { id, ...data };
+        const response = await fetch(API_URL + '?action=updateIncome', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
+    async deleteIncome(id) {
+        const response = await fetch(API_URL + '?action=deleteIncome', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+    },
+
     // --- DOCUMENTOS ---
     async getDocuments(year) {
         const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`);
@@ -151,8 +190,8 @@ const API = {
         });
     },
 
-    async getBalance() {
-        const response = await fetch(`${API_URL}?action=balance`);
+    async getBalance(year) {
+        const response = await fetch(`${API_URL}?action=balance&year=${year}`);
         return await response.json();
     },
 
