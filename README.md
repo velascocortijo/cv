@@ -28,9 +28,9 @@ Para que la web sea 100% funcional y persistente, sigue estos pasos:
 
 ## Cómo desplegar en GitHub
 1. Sube todos los archivos a un repositorio en GitHub.
-2. Ve a **Settings > Pages**.
-3. Selecciona la rama `main` y guarda.
-4. ¡Listo! Tu web estará en `https://tu-usuario.github.io/nombre-repositorio`.
+2. Ve a **Settings > Pages** y configura tu dominio personalizado `cortijovelasco.es`.
+3. Asegúrate de que el HTTPS esté activo.
+4. ¡Listo! Tu web estará en `https://cortijovelasco.es`.
 
 ## Nota sobre el Acceso
 La aplicación usa **Google Identity Services** para el login. Por seguridad, solo los correos electrónicos especificados en la lista de "primos" (que puedes configurar en el backend/validación) podrán acceder a los datos sensibles.
