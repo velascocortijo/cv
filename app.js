@@ -708,7 +708,9 @@ async function handleCredentialResponse(r) {
 
     document.getElementById('loader').style.display = 'flex';
     try {
+        console.log("Verificando permisos para:", email);
         const auth = await CortijoAPI.checkEmail(email);
+        console.log("Respuesta de autorización:", auth);
 
         if (auth.authorized) {
             currentUser = { name: p.name, avatar: p.picture, email: p.email };
