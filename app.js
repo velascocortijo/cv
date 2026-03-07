@@ -5,9 +5,11 @@ let currentYear = new Date().getFullYear();
 let currentTaskYear = new Date().getFullYear();
 let currentDocYear = new Date().getFullYear();
 let currentExpYear = new Date().getFullYear();
+let currentIncYear = new Date().getFullYear();
 
 let auditLog = [{ date: new Date().toLocaleString(), user: 'Sistema', action: 'Sesión iniciada' }];
 let cachedExpenses = [];
+let cachedIncome = [];
 let cachedTasks = [];
 let bookings = [
     { id: 1, start: '2026-01-15', end: '2026-01-18', user: 'Juan', title: 'Fin de semana' },
@@ -24,11 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         showAuthenticatedUI();
     }
     document.getElementById('expense-search')?.addEventListener('input', (e) => filterExpenses(e.target.value));
+    document.getElementById('income-search')?.addEventListener('input', (e) => filterIncome(e.target.value));
 });
 
 function initYearSelectors() {
     const years = [2026, 2027, 2028, 2029, 2030];
-    const selectors = ['exp-year-selector', 'task-year-selector', 'doc-year-selector'];
+    const selectors = ['exp-year-selector', 'task-year-selector', 'doc-year-selector', 'inc-year-selector'];
     selectors.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -62,12 +65,13 @@ function showSection(sectionId) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(sectionId + '-section')?.classList.remove('hidden');
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    document.querySelector(`nav button[onclick*="${sectionId}"]`)?.classList.add('active');
+    document.querySelector(`nav button[onclick *= "${sectionId}"]`)?.classList.add('active');
 
     // Cerrar menú móvil al cambiar de sección
     document.getElementById('main-nav').classList.remove('show');
 
     if (sectionId === 'expenses') renderExpenses();
+    if (sectionId === 'income') renderIncome();
     if (sectionId === 'calendar') renderCalendar();
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'documents') renderDocuments();
@@ -92,7 +96,7 @@ function renderCalendar() {
     if (!grid) return;
     grid.innerHTML = '';
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    document.getElementById('current-month-display').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    document.getElementById('current-month-display').textContent = `${monthNames[currentMonth]} ${currentYear} `;
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     let firstDay = new Date(currentYear, currentMonth, 1).getDay();
     firstDay = (firstDay === 0) ? 6 : firstDay - 1;
@@ -116,7 +120,7 @@ function openBookingModal(date) {
         e.preventDefault();
         const start = document.getElementById('book-start').value, end = document.getElementById('book-end').value, title = document.getElementById('book-title').value;
         bookings.push({ id: Date.now(), start, end, title, user: currentUser.name });
-        addAudit(`Reserva: ${title}`);
+        addAudit(`Reserva: ${title} `);
         renderCalendar(); closeModal();
     };
 }
@@ -147,11 +151,11 @@ async function renderExpenses() {
         filterExpenses(document.getElementById('expense-search')?.value || '');
     } catch (e) {
         console.error("renderExpenses Error:", e);
-        list.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}. Verifica que ejecutaste 'authorize' en Google Script.</td></tr>`;
+        list.innerHTML = `<tr><td colspan="6" style="color:red">Error: ${e.message}. Verifica que ejecutaste 'authorize' en Google Script.</td></tr>`;
     }
 }
 
-function filterExpenses(query) {
+async function filterExpenses(query) {
     const list = document.getElementById('expenses-body');
     const filtered = cachedExpenses.filter(e => String(e.concepto).toLowerCase().includes(query.toLowerCase()));
     let total = 0;
@@ -160,8 +164,9 @@ function filterExpenses(query) {
         return `<tr>
             <td data-label="Fecha" onclick="openEditExpenseModal(${e.id})" style="cursor:pointer;">${formatDateDisplay(e.fecha)}</td>
             <td data-label="Concepto" onclick="openEditExpenseModal(${e.id})" style="cursor:pointer;">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank" onclick="event.stopPropagation()">📎</a>` : ''}</td>
-            <td data-label="Usuario">${e.user_id}</td>
             <td data-label="Importe" class="amount">${parseFloat(e.cantidad).toFixed(2)}€</td>
+            <td data-label="Pagado por">${e.pagado_por || '-'}</td>
+            <td data-label="Notas" style="font-size:0.85rem; color:var(--text-muted);">${e.notas || ''}</td>
             <td data-label="Acciones">
                 <div style="display:flex; gap:8px;">
                     <button class="btn-icon" onclick="openEditExpenseModal(${e.id})" title="Editar">✏️</button>
@@ -170,7 +175,15 @@ function filterExpenses(query) {
             </td>
         </tr>`;
     }).join('');
-    document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
+    try {
+        const balance = await CortijoAPI.getBalance(currentExpYear);
+        document.getElementById('total-balance').innerHTML = `
+            <div style="font-size: 0.9rem; color: var(--text-muted);">Balance Neto: <span style="color: ${balance.balanceNeto >= 0 ? 'var(--success)' : 'var(--danger)'}">${balance.balanceNeto.toFixed(2)}€</span></div>
+            <div>Gastos: ${total.toFixed(2)} €</div>
+        `;
+    } catch (e) {
+        document.getElementById('total-balance').textContent = `${total.toFixed(2)} €`;
+    }
 }
 
 function openEditExpenseModal(id) {
@@ -182,15 +195,19 @@ function openEditExpenseModal(id) {
             <div class="form-group"><label>Concepto</label><input type="text" id="eexc" value="${exp.concepto}" required></div>
             <div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eexa" value="${exp.cantidad}" required></div>
             <div class="form-group"><label>Fecha</label><input type="date" id="eexd" value="${new Date(exp.fecha).toISOString().split('T')[0]}" required></div>
+            <div class="form-group"><label>Pagado por</label><select id="eexp">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}" ${m === exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Notas</label><textarea id="eexn">${exp.notas || ''}</textarea></div>
             <button type="submit" class="btn-primary" style="width:100%">Guardar Cambios</button>
-        </form>
+        </form >
     `);
     document.getElementById('edit-ex-form').onsubmit = async (e) => {
         e.preventDefault();
         const data = {
             concepto: document.getElementById('eexc').value,
             cantidad: document.getElementById('eexa').value,
-            fecha: document.getElementById('eexd').value
+            fecha: document.getElementById('eexd').value,
+            pagado_por: document.getElementById('eexp').value,
+            notas: document.getElementById('eexn').value
         };
         await CortijoAPI.updateExpense(id, data);
         renderExpenses(); closeModal();
@@ -198,17 +215,130 @@ function openEditExpenseModal(id) {
 }
 
 function openExpenseModal() {
-    openModal('Añadir Gasto', `<form id="ex-form"><div class="form-group"><label>Concepto</label><input type="text" id="exc" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="exa" required></div><div class="form-group"><label>Fecha</label><input type="date" id="exd" value="${new Date().toISOString().split('T')[0]}" required></div><div class="form-group"><label>Ticket</label><input type="file" id="exf"></div><button type="submit" id="exb" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    openModal('Añadir Gasto', `<form id="ex-form"><div class="form-group"><label>Concepto</label><input type="text" id="exc" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="exa" required></div><div class="form-group"><label>Fecha</label><input type="date" id="exd" value="${new Date().toISOString().split('T')[0]}" required></div><div class="form-group"><label>Pagado por</label><select id="exp">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('')}</select></div><div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div><div class="form-group"><label>Ticket</label><input type="file" id="exf"></div><button type="submit" id="exb" class="btn-primary" style="width:100%">Guardar</button></form>`);
     document.getElementById('ex-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('exb'); btn.disabled = true; btn.textContent = 'Guardando...';
-        const data = { id: Date.now(), user_id: currentUser.name, concepto: document.getElementById('exc').value, cantidad: document.getElementById('exa').value, fecha: document.getElementById('exd').value, year: currentExpYear };
-        await CortijoAPI.createExpense(data, document.getElementById('exf').files[0], `Gastos-${currentExpYear}`);
+        const data = { id: Date.now(), user_id: currentUser.name, concepto: document.getElementById('exc').value, cantidad: document.getElementById('exa').value, fecha: document.getElementById('exd').value, pagado_por: document.getElementById('exp').value, notas: document.getElementById('exn').value, year: currentExpYear };
+        await CortijoAPI.createExpense(data, document.getElementById('exf').files[0], `Gastos - ${currentExpYear}`);
         renderExpenses(); closeModal();
     };
 }
 
 async function confirmDeleteExpense(id) { if (confirm("¿Eliminar este gasto?")) { await CortijoAPI.deleteExpense(id); renderExpenses(); } }
+
+// --- INCOME ---
+function changeIncYear(year) { currentIncYear = year; document.getElementById('inc-year-display').textContent = year; renderIncome(); }
+
+async function renderIncome() {
+    const list = document.getElementById('income-body');
+    if (!list) return;
+    list.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+    try {
+        const data = await CortijoAPI.getIncome(currentIncYear);
+        if (data.error) throw new Error(data.error);
+        cachedIncome = data;
+        filterIncome(document.getElementById('income-search')?.value || '');
+    } catch (e) {
+        console.error("renderIncome Error:", e);
+        list.innerHTML = `<tr><td colspan="6" style="color:red">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function filterIncome(query) {
+    const list = document.getElementById('income-body');
+    const filtered = cachedIncome.filter(e => String(e.concepto).toLowerCase().includes(query.toLowerCase()));
+    let total = 0;
+    list.innerHTML = filtered.map(e => {
+        total += parseFloat(e.importe);
+        return `<tr>
+            <td data-label="Fecha" onclick="openEditIncomeModal(${e.id})" style="cursor:pointer;">${formatDateDisplay(e.fecha)}</td>
+            <td data-label="Concepto" onclick="openEditIncomeModal(${e.id})" style="cursor:pointer;">${e.concepto} ${e.url_drive ? `<a href="${e.url_drive}" target="_blank" onclick="event.stopPropagation()">📎</a>` : ''}</td>
+            <td data-label="Categoría">${e.categoria || '-'}</td>
+            <td data-label="Importe" class="amount" style="color:var(--success); font-weight:bold;">+${parseFloat(e.importe).toFixed(2)}€</td>
+            <td data-label="Recibido de">${e.recibido_de || '-'}</td>
+            <td data-label="Acciones">
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-icon" onclick="openEditIncomeModal(${e.id})" title="Editar">✏️</button>
+                    <button class="btn-icon" onclick="confirmDeleteIncome('${e.id}')" title="Eliminar">🗑️</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+    document.getElementById('total-income').textContent = `${total.toFixed(2)} €`;
+}
+
+function openIncomeModal() {
+    openModal('Añadir Ingreso', `
+        <form id="inc-form">
+            <div class="form-group"><label>Concepto</label><input type="text" id="incc" required></div>
+            <div class="form-group"><label>Importe</label><input type="number" step="0.01" id="inca" required></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="incd" value="${new Date().toISOString().split('T')[0]}" required></div>
+            <div class="form-group"><label>Categoría</label><select id="inccat">${CONFIG.INCOME_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Recibido de</label><select id="incfrom">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Notas</label><textarea id="incn"></textarea></div>
+            <div class="form-group"><label>Comprobante</label><input type="file" id="incf"></div>
+            <button type="submit" id="incb" class="btn-primary" style="width:100%">Guardar</button>
+        </form>
+    `);
+    document.getElementById('inc-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('incb'); btn.disabled = true; btn.textContent = 'Guardando...';
+        const data = {
+            id: Date.now(),
+            concepto: document.getElementById('incc').value,
+            importe: document.getElementById('inca').value,
+            fecha: document.getElementById('incd').value,
+            categoria: document.getElementById('inccat').value,
+            recibido_de: document.getElementById('incfrom').value,
+            notas: document.getElementById('incn').value,
+            year_selector: currentIncYear
+        };
+        await CortijoAPI.createIncome(data, document.getElementById('incf').files[0], `Ingresos - ${currentIncYear} `);
+        renderIncome(); closeModal();
+    };
+}
+
+function openEditIncomeModal(id) {
+    const inc = cachedIncome.find(e => e.id == id);
+    if (!inc) return;
+    openModal('Editar Ingreso', `
+        <form id="edit-inc-form">
+            <div class="form-group"><label>Concepto</label><input type="text" id="eincc" value="${inc.concepto}" required></div>
+            <div class="form-group"><label>Importe</label><input type="number" step="0.01" id="einca" value="${inc.importe}" required></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="eincd" value="${new Date(inc.fecha).toISOString().split('T')[0]}" required></div>
+            <div class="form-group"><label>Categoría</label><select id="einccat">${CONFIG.INCOME_CATEGORIES.map(c => `<option value="${c}" ${c === inc.categoria ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Recibido de</label><select id="eincfrom">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}" ${m === inc.recibido_de ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Notas</label><textarea id="eincn">${inc.notes || ''}</textarea></div>
+            <button type="submit" class="btn-primary" style="width:100%">Guardar Cambios</button>
+        </form>
+    `);
+    document.getElementById('edit-inc-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            concepto: document.getElementById('eincc').value,
+            importe: document.getElementById('einca').value,
+            fecha: document.getElementById('eincd').value,
+            categoria: document.getElementById('einccat').value,
+            recibido_de: document.getElementById('eincfrom').value,
+            notas: document.getElementById('eincn').value
+        };
+        await CortijoAPI.updateIncome(id, data);
+        renderIncome(); closeModal();
+    };
+}
+
+async function confirmDeleteIncome(id) { if (confirm("¿Eliminar este ingreso?")) { await CortijoAPI.deleteIncome(id); renderIncome(); } }
+
+function exportIncome() {
+    if (!cachedIncome.length) return alert("No hay datos para exportar");
+    const headers = ["Fecha", "Concepto", "Categoría", "Importe", "Recibido de", "Notas"];
+    const rows = cachedIncome.map(e => [formatDateDisplay(e.fecha), e.concepto, e.categoria, e.importe, e.recibido_de, e.notas]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob); link.download = `ingresos - ${currentIncYear}.csv`; link.click();
+}
 
 // --- DOCUMENTS ---
 function changeDocYear(year) { currentDocYear = year; document.getElementById('doc-year-display').textContent = year; renderDocuments(); }
