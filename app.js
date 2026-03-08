@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('user')) {
         currentUser = JSON.parse(localStorage.getItem('user'));
         showAuthenticatedUI();
-        loadInventoryData();
     }
     document.getElementById('expense-search')?.addEventListener('input', (e) => filterExpenses(e.target.value));
     document.getElementById('income-search')?.addEventListener('input', (e) => filterIncome(e.target.value));
@@ -77,7 +76,10 @@ function showSection(sectionId) {
 
     if (sectionId === 'expenses') renderExpenses();
     if (sectionId === 'income') renderIncome();
-    if (sectionId === 'inventory') renderInventory();
+    if (sectionId === 'inventory') {
+        if (cachedInventory.length === 0) loadInventoryData().then(() => renderInventory());
+        else renderInventory();
+    }
     if (sectionId === 'calendar') renderCalendar();
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'documents') renderDocuments();
@@ -951,14 +953,7 @@ async function handleCredentialResponse(r) {
             signOut();
         }
     } catch (e) {
-        let errorMsg = "Error verificando permisos (Failed to fetch).";
-        if (window.location.protocol === 'file:') {
-            errorMsg += "\n\n⚠️ ESTÁS ABRIENDO EL ARCHIVO DIRECTAMENTE.\nDebes usar un servidor local o subir los archivos a GitHub para que las funciones de red funcionen.";
-        }
-        errorMsg += "\n\nDetalles: " + e.message;
-        errorMsg += "\n\nPasos a revisar:\n1. GAS: Ejecutar como 'Yo' (Me).\n2. GAS: Acceso para 'Cualquier persona' (Anyone).\n3. GAS: Asegúrate de Autorizar el script (pulsa Revisar Permisos en GAS).\n4. URL: Verifica que en api.js la URL termina en /exec.";
-
-        alert(errorMsg);
+        alert("Error verificando permisos (Failed to fetch).\n\nDetalles: " + e.message + "\n\nIMPORTANTE: Asegúrate de que:\n1. Has desplegado el Google Script como 'Aplicación Web'.\n2. 'Quién tiene acceso' está configurado como 'Cualquier persona'.\n3. La URL en api.js termina en /exec.");
         console.error("Fetch Error:", e);
     } finally {
         document.getElementById('loader').style.display = 'none';

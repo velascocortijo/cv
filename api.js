@@ -196,13 +196,7 @@ const API = {
     },
 
     async checkEmail(email) {
-        // Usamos POST y credentials: omit para evitar redirecciones de sesión de Google (CORS 302 Bug)
-        const response = await fetch(API_URL + '?action=isAuthorized', {
-            method: 'POST',
-            body: JSON.stringify({ email }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
+        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`);
         return await response.json();
     },
 
