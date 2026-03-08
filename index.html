@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,10 +15,12 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
     <div id="loader" class="loader-overlay">
         <div class="loader"></div>
     </div>
+
     <header>
         <div class="header-content">
             <div class="logo">
@@ -49,6 +52,7 @@
             </div>
         </div>
     </header>
+
     <main>
         <!-- Login Section -->
         <section id="login-section" class="hero-section">
@@ -64,6 +68,7 @@
                 <img src="hero.jpg" alt="Cortijo Velasco">
             </div>
         </section>
+
         <!-- Calendar Section -->
         <section id="calendar-section" class="content-section hidden">
             <div class="section-header">
@@ -83,6 +88,7 @@
                 <ul id="audit-list"></ul>
             </div>
         </section>
+
         <!-- Expenses Section -->
         <section id="expenses-section" class="content-section hidden">
             <div class="section-header">
@@ -100,6 +106,7 @@
                 </div>
                 <button class="btn-primary" onclick="openExpenseModal()">+ Añadir Gasto</button>
             </div>
+
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="expense-search" placeholder="Buscar gastos...">
@@ -120,6 +127,7 @@
                 </table>
             </div>
         </section>
+
         <!-- Income Section -->
         <section id="income-section" class="content-section hidden">
             <div class="section-header">
@@ -137,6 +145,7 @@
                 </div>
                 <button class="btn-primary" onclick="openIncomeModal()">+ Añadir Ingreso</button>
             </div>
+
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="income-search" placeholder="Buscar ingresos...">
@@ -157,12 +166,14 @@
                 </table>
             </div>
         </section>
+
         <!-- Inventory Section -->
         <section id="inventory-section" class="content-section hidden">
             <div class="section-header">
                 <h2>Inventario Cortijo</h2>
                 <button class="btn-primary" onclick="openInventoryModal()">+ Añadir Artículo</button>
             </div>
+
             <div class="table-container">
                 <div class="table-actions inventory-filters">
                     <input type="text" id="inventory-search" placeholder="Buscar artículo o ID...">
@@ -196,6 +207,7 @@
                 </table>
             </div>
         </section>
+
         <!-- Tasks Section -->
         <section id="tasks-section" class="content-section hidden">
             <div class="section-header">
@@ -207,6 +219,7 @@
                 </div>
                 <button class="btn-primary" onclick="openTaskModal()">+ Nueva Tarea</button>
             </div>
+
             <div class="kanban-board">
                 <div class="kanban-column" id="col-waiting">
                     <div class="column-header">
@@ -215,6 +228,7 @@
                     </div>
                     <div class="task-list" id="list-waiting"></div>
                 </div>
+
                 <div class="kanban-column" id="col-running">
                     <div class="column-header">
                         <h3>En Ejecución</h3>
@@ -222,6 +236,7 @@
                     </div>
                     <div class="task-list" id="list-running"></div>
                 </div>
+
                 <div class="kanban-column" id="col-completed">
                     <div class="column-header">
                         <h3>Completado</h3>
@@ -231,6 +246,7 @@
                 </div>
             </div>
         </section>
+
         <!-- Documents Section -->
         <section id="documents-section" class="content-section hidden">
             <div class="section-header">
@@ -246,6 +262,7 @@
             </div>
             <div class="document-grid" id="document-list"></div>
         </section>
+
         <!-- Profile Section -->
         <section id="profile-section" class="content-section hidden">
             <div class="section-header">
@@ -262,6 +279,7 @@
             </div>
         </section>
     </main>
+
     <!-- Modals -->
     <div id="modal-container" class="modal-overlay hidden">
         <div class="modal">
@@ -272,11 +290,14 @@
             <div class="modal-body" id="modal-content"></div>
         </div>
     </div>
+
     <footer>
         <p>&copy; 2026 Cortijo Velasco. Exclusivo para la familia.</p>
     </footer>
+
     <script src="api.js"></script>
     <script src="settings.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>

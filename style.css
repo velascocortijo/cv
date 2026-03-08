@@ -979,6 +979,53 @@ footer {
     color: var(--text-muted);
 }
 
+/* Inventory Specific */
+.inventory-filters {
+    flex-wrap: wrap;
+}
+
+#inventory-table .inv-photo {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    background: #f0f0f0;
+}
+
+.inv-id {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: block;
+}
+
+.inv-name {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-nuevo { background: #e8f5e9; color: #2e7d32; }
+.status-bueno { background: #e3f2fd; color: #1565c0; }
+.status-usado { background: #fff3e0; color: #ef6c00; }
+.status-dañado { background: #ffebee; color: #c62828; }
+
+.inv-location-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;

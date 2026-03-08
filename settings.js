@@ -6,6 +6,8 @@ const CONFIG = {
     FAMILY_MEMBERS: ["Antonio", "Angelita", "Rebeca", "Raquel", "Jorge", "Tete", "Otros"],
     INCOME_CATEGORIES: ["Alquiler", "Aportación Familiar", "Subvención", "Otros"]
 };
+window.CONFIG = CONFIG;
+
 // Exportar para que app.js lo use
 if (typeof module !== 'undefined') {
     module.exports = CONFIG;

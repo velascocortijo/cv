@@ -1,0 +1,30 @@
+[
+  {
+    "id": "HERR-001",
+    "categoria": "Herramientas",
+    "articulo": "Martillo de Carpintero",
+    "marca_modelo": "Bellota Pro",
+    "cantidad": 2,
+    "unidad": "Unidades",
+    "estado": "Bueno",
+    "ubicacion": "Taller",
+    "responsible": "Antonio",
+    "foto_url": "https://m.media-amazon.com/images/I/41D0wV5-WDL._AC_SL1000_.jpg",
+    "fecha_revision": "2026-01-10",
+    "observaciones": "Uno tiene el mango desgastado."
+  },
+  {
+    "id": "CAMP-001",
+    "categoria": "Camping",
+    "articulo": "Silla Plegable",
+    "marca_modelo": "Quechua Basic",
+    "cantidad": 6,
+    "unidad": "Unidades",
+    "estado": "Usado",
+    "ubicacion": "Trastero",
+    "responsible": "Rebeca",
+    "foto_url": "https://m.media-amazon.com/images/I/71zDInN7q0L._AC_SX679_.jpg",
+    "fecha_revision": "2025-12-05",
+    "observaciones": "Revisar cierres antes de verano."
+  }
+]
