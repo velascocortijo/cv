@@ -1,16 +1,13 @@
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbxXaJw2P2D5ThKSBT7c-oEl2fd7lDkVRJOumnHD6q7ps6HazYoDJKbv3D2iOtRe_SiR/exec';
-
+const API_URL = 'https://script.google.com/macros/s/AKfycbztlmWEz8_z-kp7PU4eGfBpkFxbxXm0-Z1GoljsIZlbSYkLPlP4_7l7tpQ_Zh0vupyh/exec';
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
         const response = await fetch(`${API_URL}?action=list&year=${year}`);
         return await response.json();
     },
-
     async createExpense(expenseData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -24,7 +21,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateExpense(id, data) {
         const payload = { id, ...data };
         const response = await fetch(API_URL + '?action=update', {
@@ -34,7 +30,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteExpense(id) {
         const response = await fetch(API_URL + '?action=delete', {
             method: 'POST',
@@ -43,13 +38,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- INGRESOS ---
     async getIncome(year) {
         const response = await fetch(`${API_URL}?action=listIncome&year=${year}`);
         return await response.json();
     },
-
     async createIncome(incomeData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -63,7 +56,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateIncome(id, data) {
         const payload = { id, ...data };
         const response = await fetch(API_URL + '?action=updateIncome', {
@@ -73,7 +65,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteIncome(id) {
         const response = await fetch(API_URL + '?action=deleteIncome', {
             method: 'POST',
@@ -82,13 +73,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- DOCUMENTOS ---
     async getDocuments(year) {
         const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`);
         return await response.json();
     },
-
     // SUBIDA ATÓMICA (Sube archivo y guarda datos en un solo paso para evitar pérdida de URL)
     async uploadAndRecordDocument(docData, file) {
         return new Promise((resolve, reject) => {
@@ -113,7 +102,6 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async updateDocument(id, data) {
         const response = await fetch(API_URL + '?action=updateDocument', {
             method: 'POST',
@@ -122,7 +110,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteDocument(id) {
         const response = await fetch(API_URL + '?action=deleteDocument', {
             method: 'POST',
@@ -131,13 +118,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
         const response = await fetch(`${API_URL}?action=listTasks&year=${year}`);
         return await response.json();
     },
-
     async addTask(taskData) {
         const response = await fetch(API_URL + '?action=addTask', {
             method: 'POST',
@@ -146,7 +131,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateTask(id, data) {
         const response = await fetch(API_URL + '?action=updateTask', {
             method: 'POST',
@@ -155,7 +139,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteTask(id) {
         const response = await fetch(API_URL + '?action=deleteTask', {
             method: 'POST',
@@ -164,7 +147,6 @@ const API = {
         });
         return await response.json();
     },
-
     // --- DRIVE (Para Gastos) ---
     async uploadToDrive(file, folderName = null) {
         return new Promise((resolve, reject) => {
@@ -189,17 +171,26 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async getBalance(year) {
         const response = await fetch(`${API_URL}?action=balance&year=${year}`);
         return await response.json();
     },
-
     async checkEmail(email) {
         const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`);
         return await response.json();
+    },
+    // --- INVENTARIO (Local JSON) ---
+    async getInventory() {
+        const response = await fetch('inventario.json');
+        return await response.json();
+    },
+    async getInventoryCategories() {
+        const response = await fetch('categorias.json');
+        return await response.json();
+    },
+    async getLocations() {
+        const response = await fetch('ubicaciones.json');
+        return await response.json();
     }
 };
-
 window.CortijoAPI = API;
-
