@@ -387,11 +387,23 @@ async function exportIncome() {
 // --- INVENTARIO ---
 async function loadInventoryData() {
     try {
+        const fetchFile = async (name, fallback) => {
+            try {
+                const res = await fetch(name);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                console.warn(`No se pudo cargar ${name}, usando datos por defecto o vacíos.`, e);
+                return fallback;
+            }
+        };
+
         const [inv, cats, locs] = await Promise.all([
-            CortijoAPI.getInventory(),
-            CortijoAPI.getInventoryCategories(),
-            CortijoAPI.getLocations()
+            fetchFile('inventario.json', []),
+            fetchFile('categorias.json', ["Herramientas", "Camping", "Jardín", "Otros"]),
+            fetchFile('ubicaciones.json', ["Taller", "Trastero", "Exterior"])
         ]);
+
         cachedInventory = inv;
         cachedInvCategories = cats;
         cachedLocations = locs;
@@ -403,7 +415,9 @@ async function loadInventoryData() {
         const locFilter = document.getElementById('inv-filter-location');
         if (locFilter) locFilter.innerHTML = '<option value="">Todas las ubicaciones</option>' + locs.map(l => `<option value="${l}">${l}</option>`).join('');
 
-    } catch (e) { console.error("Error cargando datos de inventario:", e); }
+    } catch (e) {
+        console.error("Error crítico cargando datos de inventario:", e);
+    }
 }
 
 function renderInventory() {
@@ -937,7 +951,14 @@ async function handleCredentialResponse(r) {
             signOut();
         }
     } catch (e) {
-        alert("Error verificando permisos (Failed to fetch).\n\nDetalles: " + e.message + "\n\nIMPORTANTE: Asegúrate de que:\n1. Has desplegado el Google Script como 'Aplicación Web'.\n2. 'Quién tiene acceso' está configurado como 'Cualquier persona'.\n3. La URL en api.js termina en /exec.");
+        let errorMsg = "Error verificando permisos (Failed to fetch).";
+        if (window.location.protocol === 'file:') {
+            errorMsg += "\n\n⚠️ ESTÁS ABRIENDO EL ARCHIVO DIRECTAMENTE.\nDebes usar un servidor local o subir los archivos a GitHub para que las funciones de red funcionen.";
+        }
+        errorMsg += "\n\nDetalles: " + e.message;
+        errorMsg += "\n\nPasos a revisar:\n1. GAS: Ejecutar como 'Yo' (Me).\n2. GAS: Acceso para 'Cualquier persona' (Anyone).\n3. GAS: Asegúrate de Autorizar el script (pulsa Revisar Permisos en GAS).\n4. URL: Verifica que en api.js la URL termina en /exec.";
+
+        alert(errorMsg);
         console.error("Fetch Error:", e);
     } finally {
         document.getElementById('loader').style.display = 'none';
