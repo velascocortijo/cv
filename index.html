@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,12 +14,10 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-
 <body>
     <div id="loader" class="loader-overlay">
         <div class="loader"></div>
     </div>
-
     <header>
         <div class="header-content">
             <div class="logo">
@@ -29,7 +26,15 @@
             <button id="mobile-menu-btn" class="btn-icon mobile-only hidden" onclick="toggleMobileMenu()">
                 <i data-lucide="menu"></i>
             </button>
-            <nav id="main-nav" class="hidden">
+            <nav id="public-nav">
+                <button onclick="showSection('home')">Inicio</button>
+                <button onclick="showSection('history')">Historia</button>
+                <button
+                    onclick="window.open('https://www.escapadarural.com/casa-rural/cordoba/cortijo-velasco', '_blank')">Reservas</button>
+                <button onclick="showSection('contact')">Contacto</button>
+                <button onclick="showLogin()" class="btn-login-trigger">Acceso Familiar</button>
+            </nav>
+            <nav id="private-nav" class="hidden">
                 <button onclick="showSection('calendar')">Calendario</button>
                 <button onclick="showSection('expenses')">Gastos</button>
                 <button onclick="showSection('income')">Ingresos</button>
@@ -37,13 +42,15 @@
                 <button onclick="showSection('tasks')">Tareas</button>
                 <button onclick="showSection('documents')">Documentos</button>
                 <button onclick="showSection('profile')">Perfil</button>
+                <button onclick="signOut()" class="btn-logout-small"><i data-lucide="log-out"></i></button>
             </nav>
-            <div id="auth-container">
+            <div id="auth-container" class="hidden">
                 <div id="g_id_onload"
                     data-client_id="699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com"
                     data-callback="handleCredentialResponse" data-auto_prompt="false">
                 </div>
                 <div class="g_id_signin" data-type="standard"></div>
+                <button class="btn-close-auth" onclick="hideLogin()">×</button>
             </div>
             <div id="user-info" class="hidden">
                 <img id="user-avatar" src="" alt="Avatar">
@@ -52,10 +59,59 @@
             </div>
         </div>
     </header>
-
-    <main>
-        <!-- Login Section -->
-        <section id="login-section" class="hero-section">
+    <main class="container">
+        <!-- SECCIONES PÚBLICAS -->
+        <section id="home-section" class="content-section">
+            <div class="hero">
+                <div class="hero-overlay">
+                    <h1>Bienvenidos al <span class="accent">Cortijo Velasco</span></h1>
+                    <p>Un refugio de paz en el corazón de Andalucía donde la historia y el descanso se encuentran.</p>
+                    <div class="hero-actions">
+                        <button class="btn-primary" onclick="showSection('history')">Descubrir Historia</button>
+                        <button class="btn-secondary"
+                            onclick="window.open('https://www.escapadarural.com/casa-rural/cordoba/cortijo-velasco', '_blank')">Reservar
+                            Ahora</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="history-section" class="content-section hidden">
+            <div class="card">
+                <h2>Nuestra Historia</h2>
+                <div class="history-content">
+                    <p>El Cortijo Velasco es una construcción tradicional andaluza con décadas de historia. Situado en
+                        un entorno privilegiado, ha sido testigo del paso de generaciones, manteniendo siempre su
+                        esencia rústica y acogedora.</p>
+                    <p>Hoy, abrimos sus puertas para que puedas disfrutar de la tranquilidad del campo, rodeado de
+                        olivos y cielos despejados, con todas las comodidades modernas pero sin perder el encanto de lo
+                        antiguo.</p>
+                </div>
+            </div>
+        </section>
+        <section id="contact-section" class="content-section hidden">
+            <div class="contact-grid">
+                <div class="card contact-info">
+                    <h2>Contacto</h2>
+                    <p><i data-lucide="map-pin"></i> <strong>Dirección:</strong> Camino del Cortijo Velasco, s/n,
+                        Córdoba, España</p>
+                    <p><i data-lucide="phone"></i> <strong>Teléfono:</strong> <a href="tel:666666666">666.666.666</a>
+                    </p>
+                    <p><i data-lucide="mail"></i> <strong>Email:</strong> info@cortijovelasco.es</p>
+                    <div class="social-links">
+                        <button class="btn-icon"><i data-lucide="instagram"></i></button>
+                        <button class="btn-icon"><i data-lucide="facebook"></i></button>
+                    </div>
+                </div>
+                <div class="card contact-map">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3157.2306242162576!2d-4.9451833999999995!3d37.69078249999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd6d31cf60b1d9dd%3A0x5d80dc5cfd2bdee1!2sCortijo%20Velasco!5e0!3m2!1ses!2ses!4v1773008610534!5m2!1ses!2ses"
+                        width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            </div>
+        </section>
+        <!-- Login Section (This section is initially shown when not logged in) -->
+        <section id="login-section" class="hero-section hidden">
             <div class="hero-content">
                 <h1>Bienvenidos al <br><span class="highlight">Cortijo Velasco</span></h1>
                 <p>Tu refugio familiar, gestionado con amor y eficiencia.</p>
@@ -68,7 +124,6 @@
                 <img src="hero.jpg" alt="Cortijo Velasco">
             </div>
         </section>
-
         <!-- Calendar Section -->
         <section id="calendar-section" class="content-section hidden">
             <div class="section-header">
@@ -88,7 +143,6 @@
                 <ul id="audit-list"></ul>
             </div>
         </section>
-
         <!-- Expenses Section -->
         <section id="expenses-section" class="content-section hidden">
             <div class="section-header">
@@ -106,7 +160,6 @@
                 </div>
                 <button class="btn-primary" onclick="openExpenseModal()">+ Añadir Gasto</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="expense-search" placeholder="Buscar gastos...">
@@ -127,7 +180,6 @@
                 </table>
             </div>
         </section>
-
         <!-- Income Section -->
         <section id="income-section" class="content-section hidden">
             <div class="section-header">
@@ -145,7 +197,6 @@
                 </div>
                 <button class="btn-primary" onclick="openIncomeModal()">+ Añadir Ingreso</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="income-search" placeholder="Buscar ingresos...">
@@ -166,14 +217,12 @@
                 </table>
             </div>
         </section>
-
         <!-- Inventory Section -->
         <section id="inventory-section" class="content-section hidden">
             <div class="section-header">
                 <h2>Inventario Cortijo</h2>
                 <button class="btn-primary" onclick="openInventoryModal()">+ Añadir Artículo</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions inventory-filters">
                     <input type="text" id="inventory-search" placeholder="Buscar artículo o ID...">
@@ -207,7 +256,6 @@
                 </table>
             </div>
         </section>
-
         <!-- Tasks Section -->
         <section id="tasks-section" class="content-section hidden">
             <div class="section-header">
@@ -219,7 +267,6 @@
                 </div>
                 <button class="btn-primary" onclick="openTaskModal()">+ Nueva Tarea</button>
             </div>
-
             <div class="kanban-board">
                 <div class="kanban-column" id="col-waiting">
                     <div class="column-header">
@@ -228,7 +275,6 @@
                     </div>
                     <div class="task-list" id="list-waiting"></div>
                 </div>
-
                 <div class="kanban-column" id="col-running">
                     <div class="column-header">
                         <h3>En Ejecución</h3>
@@ -236,7 +282,6 @@
                     </div>
                     <div class="task-list" id="list-running"></div>
                 </div>
-
                 <div class="kanban-column" id="col-completed">
                     <div class="column-header">
                         <h3>Completado</h3>
@@ -246,7 +291,6 @@
                 </div>
             </div>
         </section>
-
         <!-- Documents Section -->
         <section id="documents-section" class="content-section hidden">
             <div class="section-header">
@@ -262,7 +306,6 @@
             </div>
             <div class="document-grid" id="document-list"></div>
         </section>
-
         <!-- Profile Section -->
         <section id="profile-section" class="content-section hidden">
             <div class="section-header">
@@ -279,7 +322,6 @@
             </div>
         </section>
     </main>
-
     <!-- Modals -->
     <div id="modal-container" class="modal-overlay hidden">
         <div class="modal">
@@ -290,14 +332,11 @@
             <div class="modal-body" id="modal-content"></div>
         </div>
     </div>
-
     <footer>
         <p>&copy; 2026 Cortijo Velasco. Exclusivo para la familia.</p>
     </footer>
-
     <script src="api.js"></script>
     <script src="settings.js"></script>
     <script src="app.js"></script>
 </body>
-
 </html>
