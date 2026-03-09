@@ -996,7 +996,7 @@ td {
 .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.7), transparent);
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1234,3 +1234,4 @@ footer {
     color: var(--text-muted);
 
 }
+
