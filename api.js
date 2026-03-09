@@ -1,7 +1,7 @@
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzhqkfjxwBKiz-QIC009EgET1dK12J2eKNnfNbGrHDW6p4plzSJFa2XXns4gNhEFwU/exec';
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
@@ -236,3 +236,4 @@ const API = {
     }
 };
 window.CortijoAPI = API;
+
