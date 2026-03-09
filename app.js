@@ -468,6 +468,7 @@ function filterInventory() {
             <td><span class="badge" style="background:#f0f0f0; color:var(--text-main); border:1px solid var(--border);">${item.categoria}</span></td>
             <td><strong>${item.cantidad}</strong> <small>${item.unidad}</small></td>
             <td><span class="status-badge status-${item.estado.toLowerCase()}">${item.estado}</span></td>
+            <td><strong>${item.precio || '0'}</strong> <small>€</small></td>
             <td>
                 <div class="inv-location-tag">
                     <i data-lucide="map-pin" style="width:14px;"></i>
@@ -498,8 +499,9 @@ function openInventoryModal() {
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div class="form-group"><label>Estado</label><select id="invst"><option value="Nuevo">Nuevo</option><option value="Bueno">Bueno</option><option value="Usado">Usado</option><option value="Dañado">Dañado</option></select></div>
-                <div class="form-group"><label>Ubicación</label><select id="invloc">${cachedLocations.map(l => `<option value="${l}">${l}</option>`).join('')}</select></div>
+                <div class="form-group"><label>Precio (€)</label><input type="number" id="invpr" step="0.01" value="0"></div>
             </div>
+            <div class="form-group"><label>Ubicación</label><select id="invloc">${cachedLocations.map(l => `<option value="${l}">${l}</option>`).join('')}</select></div>
             <div class="form-group"><label>Añadir Foto</label><input type="file" id="invfile" accept="image/*"></div>
             <div class="form-group"><label>Observaciones</label><textarea id="invobs"></textarea></div>
             <button type="submit" id="btn-save-inv" class="btn-primary" style="width:100%">Guardar Artículo</button>
@@ -521,6 +523,7 @@ function openInventoryModal() {
                 unidad: document.getElementById('invu').value,
                 estado: document.getElementById('invst').value,
                 ubicacion: document.getElementById('invloc').value,
+                precio: parseFloat(document.getElementById('invpr').value) || 0,
                 fecha_revision: new Date().toISOString().split('T')[0],
                 observaciones: document.getElementById('invobs').value
             };
@@ -550,8 +553,9 @@ function openEditInventoryModal(id) {
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div class="form-group"><label>Estado</label><select id="einvst"><option value="Nuevo" ${item.estado === 'Nuevo' ? 'selected' : ''}>Nuevo</option><option value="Bueno" ${item.estado === 'Bueno' ? 'selected' : ''}>Bueno</option><option value="Usado" ${item.estado === 'Usado' ? 'selected' : ''}>Usado</option><option value="Dañado" ${item.estado === 'Dañado' ? 'selected' : ''}>Dañado</option></select></div>
-                <div class="form-group"><label>Ubicación</label><select id="einvloc">${cachedLocations.map(l => `<option value="${l}" ${l === item.ubicacion ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+                <div class="form-group"><label>Precio (€)</label><input type="number" id="einvpr" step="0.01" value="${item.precio || 0}"></div>
             </div>
+            <div class="form-group"><label>Ubicación</label><select id="einvloc">${cachedLocations.map(l => `<option value="${l}" ${l === item.ubicacion ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
             <div class="form-group"><label>Cambiar Foto</label><input type="file" id="einvfile" accept="image/*"></div>
             <div class="form-group"><label>Observaciones</label><textarea id="einvobs">${item.observaciones || ''}</textarea></div>
             <button type="submit" id="btn-update-inv" class="btn-primary" style="width:100%">Actualizar Artículo</button>
@@ -573,6 +577,7 @@ function openEditInventoryModal(id) {
                 unidad: document.getElementById('einvu').value,
                 estado: document.getElementById('einvst').value,
                 ubicacion: document.getElementById('einvloc').value,
+                precio: parseFloat(document.getElementById('einvpr').value) || 0,
                 observaciones: document.getElementById('einvobs').value
             };
 
