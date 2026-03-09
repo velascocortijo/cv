@@ -1,16 +1,13 @@
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbztlmWEz8_z-kp7PU4eGfBpkFxbxXm0-Z1GoljsIZlbSYkLPlP4_7l7tpQ_Zh0vupyh/exec';
-
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
-        const response = await fetch(`${API_URL}?action=list&year=${year}`);
+        const response = await fetch(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async createExpense(expenseData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -20,36 +17,35 @@ const API = {
         const response = await fetch(API_URL + '?action=create', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async updateExpense(id, data) {
         const payload = { id, ...data };
         const response = await fetch(API_URL + '?action=update', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async deleteExpense(id) {
         const response = await fetch(API_URL + '?action=delete', {
             method: 'POST',
             body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     // --- INGRESOS ---
     async getIncome(year) {
-        const response = await fetch(`${API_URL}?action=listIncome&year=${year}`);
+        const response = await fetch(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async createIncome(incomeData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -59,36 +55,35 @@ const API = {
         const response = await fetch(API_URL + '?action=addIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async updateIncome(id, data) {
         const payload = { id, ...data };
         const response = await fetch(API_URL + '?action=updateIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async deleteIncome(id) {
         const response = await fetch(API_URL + '?action=deleteIncome', {
             method: 'POST',
             body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     // --- DOCUMENTOS ---
     async getDocuments(year) {
-        const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`);
+        const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     // SUBIDA ATÓMICA (Sube archivo y guarda datos en un solo paso para evitar pérdida de URL)
     async uploadAndRecordDocument(docData, file) {
         return new Promise((resolve, reject) => {
@@ -103,7 +98,8 @@ const API = {
                 const res = await fetch(API_URL + '?action=uploadAndRecord', {
                     method: 'POST',
                     body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    credentials: 'omit'
                 });
                 const result = await res.json();
                 if (result.success) resolve(result);
@@ -113,58 +109,56 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async updateDocument(id, data) {
         const response = await fetch(API_URL + '?action=updateDocument', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async deleteDocument(id) {
         const response = await fetch(API_URL + '?action=deleteDocument', {
             method: 'POST',
             body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
-        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`);
+        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async addTask(taskData) {
         const response = await fetch(API_URL + '?action=addTask', {
             method: 'POST',
             body: JSON.stringify(taskData),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async updateTask(id, data) {
         const response = await fetch(API_URL + '?action=updateTask', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async deleteTask(id) {
         const response = await fetch(API_URL + '?action=deleteTask', {
             method: 'POST',
             body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     // --- DRIVE (Para Gastos) ---
     async uploadToDrive(file, folderName = null) {
         return new Promise((resolve, reject) => {
@@ -179,7 +173,8 @@ const API = {
                 const res = await fetch(API_URL + '?action=upload', {
                     method: 'POST',
                     body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    credentials: 'omit'
                 });
                 const data = await res.json();
                 if (data.url && !data.url.startsWith('error')) resolve(data.url);
@@ -189,23 +184,19 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async getBalance(year) {
-        const response = await fetch(`${API_URL}?action=balance&year=${year}`);
+        const response = await fetch(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async checkEmail(email) {
-        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`);
+        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
-
     // --- INVENTARIO ---
     async getInventory() {
-        const response = await fetch(`${API_URL}?action=listInventory`);
+        const response = await fetch(`${API_URL}?action=listInventory`, { credentials: 'omit' });
         return await response.json();
     },
-
     async addInventory(data, file = null) {
         let urlDrive = '';
         if (file) {
@@ -215,11 +206,11 @@ const API = {
         const response = await fetch(API_URL + '?action=addInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async updateInventory(id, data, file = null) {
         let urlDrive = '';
         if (file) {
@@ -229,19 +220,19 @@ const API = {
         const response = await fetch(API_URL + '?action=updateInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     },
-
     async deleteInventory(id) {
         const response = await fetch(API_URL + '?action=deleteInventory', {
             method: 'POST',
             body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
         });
         return await response.json();
     }
 };
-
 window.CortijoAPI = API;
