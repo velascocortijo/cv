@@ -48,6 +48,15 @@ function initYearSelectors() {
 }
 
 // Utils
+function getDriveDirectLink(url) {
+    if (!url) return 'https://via.placeholder.com/60?text=Sin+Foto';
+    if (url.includes('drive.google.com')) {
+        const id = url.match(/[-\w]{25,}/);
+        if (id) return `https://lh3.googleusercontent.com/u/0/d/${id[0]}`;
+    }
+    return url;
+}
+
 function formatDateDisplay(dateStr) {
     if (!dateStr || dateStr === "undefined") return '';
     const date = new Date(dateStr);
@@ -108,7 +117,8 @@ function hideLogin() {
 }
 
 function toggleMobileMenu() {
-    const nav = currentUser ? document.getElementById('private-nav') : document.getElementById('public-nav');
+    const navId = currentUser ? 'private-nav' : 'public-nav';
+    const nav = document.getElementById(navId);
     if (nav) nav.classList.toggle('show');
 }
 
@@ -450,7 +460,7 @@ function filterInventory() {
 
     list.innerHTML = filtered.map(item => `
         <tr>
-            <td><img src="${item.foto_url || 'https://via.placeholder.com/60?text=Sin+Foto'}" class="inv-photo" alt="Foto"></td>
+            <td><img src="${getDriveDirectLink(item.foto_url)}" class="inv-photo" alt="Foto"></td>
             <td>
                 <span class="inv-name" onclick="openEditInventoryModal('${item.id}')" style="cursor:pointer; display:block;">${item.articulo}</span>
                 <small style="color:var(--text-muted); font-size:10px;">${item.marca_modelo || ''}</small>
