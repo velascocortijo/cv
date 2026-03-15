@@ -16,7 +16,16 @@ const CONFIG = {
         "Habitación 3 Antonio", "Habitación 4 Angelita", "Baño 1", "Baño 2",
         "Patio interior", "Patio exterior", "Piscina",
         "Cuarto de depuradora", "Almacén propio / Pajar"
-    ]
+    ],
+    EXPENSE_PERCENTAGES: {
+        "Antonio": 25.0,
+        "Angelita": 25.0,
+        "Rebeca": 12.5,
+        "Raquel": 12.5,
+        "Jorge": 12.5,
+        "Tete": 12.5,
+        "Otros": 0
+    }
 };
 window.CONFIG = CONFIG;
 

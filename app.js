@@ -106,6 +106,10 @@ function showSection(sectionId) {
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'documents') renderDocuments();
     if (sectionId === 'profile') renderProfile();
+    if (sectionId === 'split') {
+        if (cachedExpenses.length === 0) loadExpensesData().then(() => renderExpenseSplit());
+        else renderExpenseSplit();
+    }
 }
 
 function showLogin() {
@@ -175,6 +179,145 @@ function openEditBookingModal(id) {
 }
 
 function deleteBooking(id) { if (confirm("¿Borrar reserva?")) { bookings = bookings.filter(b => b.id !== id); renderCalendar(); closeModal(); } }
+
+// --- REPARTO DE GASTOS ---
+async function renderExpenseSplit() {
+    const yearSelect = document.getElementById('split-year-select');
+    if (!yearSelect) return;
+    
+    // Populate year select if empty
+    if (yearSelect.options.length === 0) {
+        const currentY = new Date().getFullYear();
+        for (let y = currentY + 1; y >= currentY - 5; y--) {
+            yearSelect.innerHTML += `<option value="${y}" ${y === currentY ? 'selected' : ''}>${y}</option>`;
+        }
+    }
+    
+    const selectedYear = yearSelect.value;
+    
+    // Si no tenemos gastos o el año seleccionado ha cambiado y la cache no lo cubre todo,
+    // (idealmente deberíamos recargar para asegurar, pero si ya hemos filtrado por año rehusaremos loadExpensesData)
+    // Para simplificar, forzamos recarga del año si es necesario o usamos el caché.
+    const expenses = await CortijoAPI.getExpenses(selectedYear);
+    
+    let totalExpenses = 0;
+    const paidByPerson = {};
+    const percentages = window.CONFIG.EXPENSE_PERCENTAGES || {};
+    
+    // Initialize paid amounts
+    Object.keys(percentages).forEach(person => {
+        paidByPerson[person] = 0;
+    });
+
+    // Calculate total expenses and amount paid by each person
+    expenses.forEach(exp => {
+        const amount = parseFloat(exp.cantidad) || 0;
+        totalExpenses += amount;
+        
+        // Asume que exp.pagado_por coincide con las claves de percentages
+        const payer = exp.pagado_por || 'Otros';
+        if (paidByPerson[payer] !== undefined) {
+            paidByPerson[payer] += amount;
+        } else {
+            // Si hay alguien que pagó que no está en la configuración
+            paidByPerson[payer] = amount;
+            percentages[payer] = 0; // Asignamos 0% por defecto
+        }
+    });
+
+    const balances = [];
+    const summaryBox = document.getElementById('split-summary-box');
+    const balancesContainer = document.getElementById('split-balances-container');
+    const debtsContainer = document.getElementById('split-debts-container');
+
+    // 1. Calculate balances
+    Object.keys(paidByPerson).forEach(person => {
+        const paid = paidByPerson[person];
+        const percentage = percentages[person] || 0;
+        const shouldHavePaid = (totalExpenses * percentage) / 100;
+        const balance = paid - shouldHavePaid;
+        
+        // Evitamos mostrar "Otros" si no ha pagado ni tenía que pagar
+        if (percentage > 0 || paid > 0) {
+            balances.push({
+                person,
+                paid,
+                shouldHavePaid,
+                balance
+            });
+        }
+    });
+
+    // 2. Render Totales Globales
+    summaryBox.innerHTML = `
+        <h3 style="font-size:2rem; color:var(--primary); margin-bottom:0.5rem;">${totalExpenses.toFixed(2)} €</h3>
+        <p style="color:var(--text-muted);">Gasto total familiar en ${selectedYear}</p>
+    `;
+
+    // 3. Render Saldos Individuales
+    balancesContainer.innerHTML = balances.map(b => {
+        const balanceColor = b.balance >= 0 ? 'var(--success)' : 'var(--danger)';
+        const balanceSign = b.balance >= 0 ? '+' : '';
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--bg-main);">
+                <div>
+                    <strong>${b.person}</strong>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">Pagado: ${b.paid.toFixed(2)}€ | Debería: ${b.shouldHavePaid.toFixed(2)}€ (${(window.CONFIG.EXPENSE_PERCENTAGES[b.person] || 0)}%)</div>
+                </div>
+                <div style="font-weight:bold; color:${balanceColor};">
+                    ${balanceSign}${b.balance.toFixed(2)} €
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // 4. Algorithm: Simplificación de Deudas
+    const debtors = balances.filter(b => b.balance < -0.01).map(b => ({ ...b, debt: Math.abs(b.balance) }));
+    const creditors = balances.filter(b => b.balance > 0.01).map(b => ({ ...b, credit: b.balance }));
+
+    // Ordenar de mayor a menor para minimizar transacciones
+    debtors.sort((a, b) => b.debt - a.debt);
+    creditors.sort((a, b) => b.credit - a.credit);
+
+    let transactions = [];
+    let d = 0; // index deudores
+    let c = 0; // index acreedores
+
+    while (d < debtors.length && c < creditors.length) {
+        const debtor = debtors[d];
+        const creditor = creditors[c];
+        
+        const amount = Math.min(debtor.debt, creditor.credit);
+        
+        if (amount > 0.01) {
+            transactions.push({
+                from: debtor.person,
+                to: creditor.person,
+                amount: amount
+            });
+        }
+        
+        debtor.debt -= amount;
+        creditor.credit -= amount;
+        
+        if (debtor.debt < 0.01) d++;
+        if (creditor.credit < 0.01) c++;
+    }
+
+    // 5. Render Transacciones
+    if (transactions.length === 0) {
+        debtsContainer.innerHTML = `<p style="text-align:center; padding:2rem; color:var(--text-muted);">🎉 ¡Todas las cuentas están cuadradas!</p>`;
+    } else {
+        debtsContainer.innerHTML = transactions.map(t => `
+            <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; display:flex; align-items:center;">
+                <div style="flex-grow:1;">
+                    <strong>${t.from}</strong> <span style="color:var(--text-muted);">debe</span> <strong>${t.amount.toFixed(2)}€</strong> <span style="color:var(--text-muted);">a</span> <strong>${t.to}</strong>
+                </div>
+                <button class="btn-icon" style="background:var(--bg-card);" onclick="alert('Esta función marcará la deuda como saldada creando ingresos/gastos.')" title="Saldar Deuda">💳</button>
+            </div>
+        `).join('');
+    }
+}
 
 // --- EXPENSES ---
 function changeExpYear(year) { currentExpYear = year; document.getElementById('exp-year-display').textContent = year; renderExpenses(); }

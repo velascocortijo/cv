@@ -42,6 +42,7 @@
                 <button onclick="showSection('calendar')">Calendario</button>
                 <button onclick="showSection('expenses')">Gastos</button>
                 <button onclick="showSection('income')">Ingresos</button>
+                <button onclick="showSection('split')">Reparto</button>
                 <button onclick="showSection('inventory')">Inventario</button>
                 <button onclick="showSection('tasks')">Tareas</button>
                 <button onclick="showSection('documents')">Documentos</button>
@@ -64,6 +65,38 @@
     </header>
 
     <main class="container">
+        <!-- SECCIÓN DE REPARTO DE GASTOS -->
+        <section id="split-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Reparto de Gastos</h2>
+                <div class="calendar-nav header-with-filter">
+                    <select id="split-year-select" onchange="renderExpenseSplit()">
+                        <!-- Años se llenan dinámicamente -->
+                    </select>
+                </div>
+            </div>
+            
+            <div id="split-summary-box" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,0.05); text-align:center;">
+                <!-- Total Gastos y Porcentajes resumen -->
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px;">
+                <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Resumen por Persona</h3>
+                    <div id="split-balances-container">
+                        <!-- Tabla o lista de saldos por persona -->
+                    </div>
+                </div>
+
+                <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; color:var(--primary);">Deudas Simplificadas</h3>
+                    <div id="split-debts-container">
+                        <!-- Lista de quién debe a quién -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- SECCIONES PÚBLICAS -->
         <section id="home-section" class="content-section">
             <div class="hero">
