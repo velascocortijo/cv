@@ -207,7 +207,7 @@ async function renderExpenseSplit() {
     showLoader();
     let expenses = [];
     try {
-        expenses = await CortijoAPI.getExpenses(selectedYear);
+        expenses = await API.getExpenses(selectedYear);
     } catch (e) {
         summaryBox.innerHTML = '<p style="color:var(--danger)">Error al cargar gastos.</p>';
         balancesContainer.innerHTML = '';
