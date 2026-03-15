@@ -204,7 +204,7 @@ async function renderExpenseSplit() {
     balancesContainer.innerHTML = '<p>Calculando saldos...</p>';
     debtsContainer.innerHTML = '<p>Buscando deudas...</p>';
 
-    showLoader();
+    document.getElementById('loader').style.display = 'flex';
     let expenses = [];
     try {
         expenses = await API.getExpenses(selectedYear);
@@ -212,10 +212,10 @@ async function renderExpenseSplit() {
         summaryBox.innerHTML = '<p style="color:var(--danger)">Error al cargar gastos.</p>';
         balancesContainer.innerHTML = '';
         debtsContainer.innerHTML = '';
-        hideLoader();
+        document.getElementById('loader').style.display = 'none';
         return;
     }
-    hideLoader();
+    document.getElementById('loader').style.display = 'none';
     let totalExpenses = 0;
     const paidByPerson = {};
     const percentages = window.CONFIG.EXPENSE_PERCENTAGES || {};
