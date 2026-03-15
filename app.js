@@ -107,8 +107,7 @@ function showSection(sectionId) {
     if (sectionId === 'documents') renderDocuments();
     if (sectionId === 'profile') renderProfile();
     if (sectionId === 'split') {
-        if (cachedExpenses.length === 0) loadExpensesData().then(() => renderExpenseSplit());
-        else renderExpenseSplit();
+        renderExpenseSplit();
     }
 }
 
@@ -195,11 +194,28 @@ async function renderExpenseSplit() {
     
     const selectedYear = yearSelect.value;
     
-    // Si no tenemos gastos o el año seleccionado ha cambiado y la cache no lo cubre todo,
-    // (idealmente deberíamos recargar para asegurar, pero si ya hemos filtrado por año rehusaremos loadExpensesData)
-    // Para simplificar, forzamos recarga del año si es necesario o usamos el caché.
-    const expenses = await CortijoAPI.getExpenses(selectedYear);
-    
+    const summaryBox = document.getElementById('split-summary-box');
+    const balancesContainer = document.getElementById('split-balances-container');
+    const debtsContainer = document.getElementById('split-debts-container');
+
+    if (!summaryBox || !balancesContainer || !debtsContainer) return;
+
+    summaryBox.innerHTML = '<p>Cargando datos...</p>';
+    balancesContainer.innerHTML = '<p>Calculando saldos...</p>';
+    debtsContainer.innerHTML = '<p>Buscando deudas...</p>';
+
+    showLoader();
+    let expenses = [];
+    try {
+        expenses = await CortijoAPI.getExpenses(selectedYear);
+    } catch (e) {
+        summaryBox.innerHTML = '<p style="color:var(--danger)">Error al cargar gastos.</p>';
+        balancesContainer.innerHTML = '';
+        debtsContainer.innerHTML = '';
+        hideLoader();
+        return;
+    }
+    hideLoader();
     let totalExpenses = 0;
     const paidByPerson = {};
     const percentages = window.CONFIG.EXPENSE_PERCENTAGES || {};
@@ -226,9 +242,6 @@ async function renderExpenseSplit() {
     });
 
     const balances = [];
-    const summaryBox = document.getElementById('split-summary-box');
-    const balancesContainer = document.getElementById('split-balances-container');
-    const debtsContainer = document.getElementById('split-debts-container');
 
     // 1. Calculate balances
     Object.keys(paidByPerson).forEach(person => {
