@@ -271,51 +271,39 @@ async function renderExpenseSplit() {
         `;
     }).join('');
 
-    // 4. Algorithm: Simplificación de Deudas
+    // 4. Algorithm: Deudas con la Comunidad
     const debtors = balances.filter(b => b.balance < -0.01).map(b => ({ ...b, debt: Math.abs(b.balance) }));
     const creditors = balances.filter(b => b.balance > 0.01).map(b => ({ ...b, credit: b.balance }));
 
-    // Ordenar de mayor a menor para minimizar transacciones
-    debtors.sort((a, b) => b.debt - a.debt);
-    creditors.sort((a, b) => b.credit - a.credit);
-
-    let transactions = [];
-    let d = 0; // index deudores
-    let c = 0; // index acreedores
-
-    while (d < debtors.length && c < creditors.length) {
-        const debtor = debtors[d];
-        const creditor = creditors[c];
-        
-        const amount = Math.min(debtor.debt, creditor.credit);
-        
-        if (amount > 0.01) {
-            transactions.push({
-                from: debtor.person,
-                to: creditor.person,
-                amount: amount
-            });
-        }
-        
-        debtor.debt -= amount;
-        creditor.credit -= amount;
-        
-        if (debtor.debt < 0.01) d++;
-        if (creditor.credit < 0.01) c++;
-    }
-
-    // 5. Render Transacciones
-    if (transactions.length === 0) {
-        debtsContainer.innerHTML = `<p style="text-align:center; padding:2rem; color:var(--text-muted);">🎉 ¡Todas las cuentas están cuadradas!</p>`;
+    // 5. Render Transacciones (A la comunidad)
+    if (debtors.length === 0 && creditors.length === 0) {
+        debtsContainer.innerHTML = `<p style="text-align:center; padding:2rem; color:var(--text-muted);">🎉 ¡Todas las cuentas están cuadradas con la Comunidad!</p>`;
     } else {
-        debtsContainer.innerHTML = transactions.map(t => `
-            <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; display:flex; align-items:center;">
+        let transactionsHtml = '';
+        
+        // Quienes deben a la comunidad
+        debtors.forEach(d => {
+            transactionsHtml += `
+            <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; border-left: 4px solid var(--danger);">
                 <div style="flex-grow:1;">
-                    <strong>${t.from}</strong> <span style="color:var(--text-muted);">debe</span> <strong>${t.amount.toFixed(2)}€</strong> <span style="color:var(--text-muted);">a</span> <strong>${t.to}</strong>
+                    <strong>${d.person}</strong> <span style="color:var(--text-muted);">debe ingresar</span> <strong>${d.debt.toFixed(2)}€</strong> <span style="color:var(--text-muted);">a la</span> <strong>Comunidad de Bienes</strong>
                 </div>
-                <button class="btn-icon" style="background:var(--bg-card);" onclick="alert('Esta función marcará la deuda como saldada creando ingresos/gastos.')" title="Saldar Deuda">💳</button>
-            </div>
-        `).join('');
+                <button class="btn-icon" style="background:var(--bg-card);" onclick="alert('Registra un ingreso en la Comunidad para saldar esta deuda.')" title="Registrar Ingreso">💰</button>
+            </div>`;
+        });
+
+        // A quienes les debe la comunidad
+        creditors.forEach(c => {
+            transactionsHtml += `
+            <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; border-left: 4px solid var(--success);">
+                <div style="flex-grow:1;">
+                    <span style="color:var(--text-muted);">La</span> <strong>Comunidad de Bienes</strong> <span style="color:var(--text-muted);">debe compensar con</span> <strong>${c.credit.toFixed(2)}€</strong> <span style="color:var(--text-muted);">a</span> <strong>${c.person}</strong>
+                </div>
+                 <button class="btn-icon" style="background:var(--bg-card);" onclick="alert('Registra un gasto en la Comunidad (Pago a familiar) para saldar esta cuenta.')" title="Registrar Gasto">💸</button>
+            </div>`;
+        });
+
+        debtsContainer.innerHTML = transactionsHtml;
     }
 }
 
