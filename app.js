@@ -1183,13 +1183,13 @@ async function manualBackup() {
     document.getElementById('loader').style.display = 'flex';
     
     try {
-        const result = await API.triggerBackup();
+        const result = await API.triggerBackup(currentUser.email);
         if (result && result.success) {
             statusEl.style.color = 'var(--success)';
             statusEl.textContent = '✅ ' + result.message;
         } else {
             statusEl.style.color = 'var(--danger)';
-            statusEl.textContent = '❌ Error inesperado al hacer la copia.';
+            statusEl.textContent = '❌ ' + (result.message || 'Error inesperado al hacer la copia.');
         }
     } catch (e) {
         statusEl.style.color = 'var(--danger)';

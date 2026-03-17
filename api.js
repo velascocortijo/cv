@@ -2,7 +2,7 @@
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzJxIQNnlzwugc_7JZ8im7WV8yhL2nCK01UM_GD5Nv-9B2-afDsO009VcnuBWrikf5c/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 const API = {
     // --- GASTOS ---
@@ -260,8 +260,8 @@ const API = {
     },
 
     // --- COPIAS DE SEGURIDAD ---
-    async triggerBackup() {
-        const response = await fetch(`${API_URL}?action=backup`, { credentials: 'omit' });
+    async triggerBackup(email) {
+        const response = await fetch(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     }
 };
