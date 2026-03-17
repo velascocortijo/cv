@@ -257,6 +257,12 @@ const API = {
             credentials: 'omit'
         });
         return await response.json();
+    },
+
+    // --- COPIAS DE SEGURIDAD ---
+    async triggerBackup() {
+        const response = await fetch(`${API_URL}?action=backup`, { credentials: 'omit' });
+        return await response.json();
     }
 };
 

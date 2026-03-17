@@ -374,6 +374,17 @@
                         <p id="profile-email"></p>
                     </div>
                 </div>
+                <div id="admin-tools" class="hidden" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 1rem; color: var(--text-main);">Administración del Sistema</h4>
+                    <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        Realiza un volcado completo y seguro del sistema (Base de Datos + Archivos + Código) de forma manual.
+                    </p>
+                    <button class="btn-primary" onclick="manualBackup()" style="display:flex; align-items:center; gap:8px;">
+                        <i data-lucide="database-backup"></i>
+                        Forzar Copia de Seguridad
+                    </button>
+                    <p id="backup-status" style="margin-top: 1rem; font-size: 0.9rem; font-weight: bold;"></p>
+                </div>
             </div>
         </section>
     </main>

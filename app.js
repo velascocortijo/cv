@@ -1154,4 +1154,48 @@ function renderProfile() {
     document.getElementById('profile-name').textContent = currentUser.name;
     document.getElementById('profile-email').textContent = currentUser.email;
     document.getElementById('profile-avatar').src = currentUser.avatar;
+
+    const adminTools = document.getElementById('admin-tools');
+    if (adminTools) {
+        if (currentUser && currentUser.email === 'velascocortijo@gmail.com') {
+            adminTools.classList.remove('hidden');
+        } else {
+            adminTools.classList.add('hidden');
+        }
+    }
+
+}
+
+// --- COPIA DE SEGURIDAD MANUAL ---
+async function manualBackup() {
+    if (!currentUser || currentUser.email !== 'velascocortijo@gmail.com') {
+        alert("Acceso denegado. Solo el administrador puede realizar copias de seguridad.");
+        return;
+    }
+    const statusEl = document.getElementById('backup-status');
+
+    if (!statusEl) return;
+    
+    if (!confirm("Esto iniciará una copia completa de toda la base de datos y adjuntos en tu Google Drive. ¿Deseas continuar?")) return;
+    
+    statusEl.style.color = 'var(--primary)';
+    statusEl.textContent = '⏱️ Iniciando copia de seguridad... por favor, no cierres esta ventana.';
+    document.getElementById('loader').style.display = 'flex';
+    
+    try {
+        const result = await API.triggerBackup();
+        if (result && result.success) {
+            statusEl.style.color = 'var(--success)';
+            statusEl.textContent = '✅ ' + result.message;
+        } else {
+            statusEl.style.color = 'var(--danger)';
+            statusEl.textContent = '❌ Error inesperado al hacer la copia.';
+        }
+    } catch (e) {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.textContent = '❌ Error de conexión: ' + e.message;
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+        setTimeout(() => { statusEl.textContent = ''; }, 10000); // limpiar a los 10 segundos
+    }
 }
