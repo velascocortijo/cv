@@ -1150,20 +1150,21 @@ function signOut() {
 }
 function openModal(t, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('modal-container').classList.remove('hidden'); }
 function closeModal() { document.getElementById('modal-container').classList.add('hidden'); }
+
 function renderProfile() {
+    if (!currentUser) return;
     document.getElementById('profile-name').textContent = currentUser.name;
     document.getElementById('profile-email').textContent = currentUser.email;
     document.getElementById('profile-avatar').src = currentUser.avatar;
 
     const adminTools = document.getElementById('admin-tools');
     if (adminTools) {
-        if (currentUser && currentUser.email === 'velascocortijo@gmail.com') {
+        if (currentUser.email === 'velascocortijo@gmail.com') {
             adminTools.classList.remove('hidden');
         } else {
             adminTools.classList.add('hidden');
         }
     }
-
 }
 
 // --- COPIA DE SEGURIDAD MANUAL ---
@@ -1173,7 +1174,6 @@ async function manualBackup() {
         return;
     }
     const statusEl = document.getElementById('backup-status');
-
     if (!statusEl) return;
     
     if (!confirm("Esto iniciará una copia completa de toda la base de datos y adjuntos en tu Google Drive. ¿Deseas continuar?")) return;
@@ -1196,6 +1196,59 @@ async function manualBackup() {
         statusEl.textContent = '❌ Error de conexión: ' + e.message;
     } finally {
         document.getElementById('loader').style.display = 'none';
-        setTimeout(() => { statusEl.textContent = ''; }, 10000); // limpiar a los 10 segundos
+        setTimeout(() => { statusEl.textContent = ''; }, 10000);
+    }
+}
+
+// --- REGISTRO DE ACTIVIDAD (AUDITORÍA) ---
+async function loadAuditLog() {
+    if (!currentUser || currentUser.email !== 'velascocortijo@gmail.com') return;
+
+    const container = document.getElementById('audit-log-container');
+    if (!container) return;
+
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">⏱️ Cargando historial...</p>';
+
+    try {
+        const records = await API.listAudit(currentUser.email);
+
+        if (!Array.isArray(records) || records.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No hay actividad registrada todavía.</p>';
+            return;
+        }
+
+        const sorted = [...records].reverse();
+
+        const table = \`
+            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border);">
+                        <th style="text-align:left; padding:8px; color:var(--text-muted);">Fecha / Hora</th>
+                        <th style="text-align:left; padding:8px; color:var(--text-muted);">Usuario</th>
+                        <th style="text-align:left; padding:8px; color:var(--text-muted);">Acción</th>
+                        <th style="text-align:left; padding:8px; color:var(--text-muted);">Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    \${sorted.slice(0, 100).map(r => \`
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding:8px; white-space:nowrap; color:var(--text-muted);">\${r.timestamp || ''}</td>
+                            <td style="padding:8px; color:var(--text-main); font-weight: 500;">\${r.email || ''}</td>
+                            <td style="padding:8px;">
+                                <span style="background:rgba(52,211,153,0.15); color:var(--primary); padding:2px 8px; border-radius:12px; font-size:0.75rem; white-space:nowrap; font-weight: 600;">
+                                    \${r.accion || ''}
+                                </span>
+                            </td>
+                            <td style="padding:8px; color:var(--text-muted); font-size: 0.8rem;">\${r.detalles || ''}</td>
+                        </tr>
+                    \`).join('')}
+                </tbody>
+            </table>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.5rem; text-align: right;">Mostrando los últimos \${Math.min(sorted.length, 100)} registros de \${sorted.length}.</p>
+        \`;
+        container.innerHTML = table;
+
+    } catch (e) {
+        container.innerHTML = '<p style="color:var(--danger); font-size:0.9rem;">❌ Error cargando el historial: ' + e.message + '</p>';
     }
 }

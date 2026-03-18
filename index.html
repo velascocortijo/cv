@@ -384,6 +384,17 @@
                         Forzar Copia de Seguridad
                     </button>
                     <p id="backup-status" style="margin-top: 1rem; font-size: 0.9rem; font-weight: bold;"></p>
+
+                    <!-- LOG DE AUDITORÍA -->
+                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h4 style="color: var(--text-main);">Registro de Actividad</h4>
+                            <button class="btn-primary" onclick="loadAuditLog()" style="font-size:0.8rem; padding: 0.4rem 0.9rem;">Actualizar</button>
+                        </div>
+                        <div id="audit-log-container" style="overflow-x:auto;">
+                            <p style="color: var(--text-muted); font-size:0.9rem;">Pulsa "Actualizar" para cargar el historial.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
