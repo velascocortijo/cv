@@ -1219,7 +1219,7 @@ async function loadAuditLog() {
 
         const sorted = [...records].reverse();
 
-        const table = \`
+        const table = `
             <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border);">
@@ -1230,22 +1230,22 @@ async function loadAuditLog() {
                     </tr>
                 </thead>
                 <tbody>
-                    \${sorted.slice(0, 100).map(r => \`
+                    ${sorted.slice(0, 100).map(r => `
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding:8px; white-space:nowrap; color:var(--text-muted);">\${r.timestamp || ''}</td>
-                            <td style="padding:8px; color:var(--text-main); font-weight: 500;">\${r.email || ''}</td>
+                            <td style="padding:8px; white-space:nowrap; color:var(--text-muted);">${r.timestamp || ''}</td>
+                            <td style="padding:8px; color:var(--text-main); font-weight: 500;">${r.email || ''}</td>
                             <td style="padding:8px;">
                                 <span style="background:rgba(52,211,153,0.15); color:var(--primary); padding:2px 8px; border-radius:12px; font-size:0.75rem; white-space:nowrap; font-weight: 600;">
-                                    \${r.accion || ''}
+                                    ${r.accion || ''}
                                 </span>
                             </td>
-                            <td style="padding:8px; color:var(--text-muted); font-size: 0.8rem;">\${r.detalles || ''}</td>
+                            <td style="padding:8px; color:var(--text-muted); font-size: 0.8rem;">${r.detalles || ''}</td>
                         </tr>
-                    \`).join('')}
+                    `).join('')}
                 </tbody>
             </table>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.5rem; text-align: right;">Mostrando los últimos \${Math.min(sorted.length, 100)} registros de \${sorted.length}.</p>
-        \`;
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.5rem; text-align: right;">Mostrando los últimos ${Math.min(sorted.length, 100)} registros de ${sorted.length}.</p>
+        `;
         container.innerHTML = table;
 
     } catch (e) {
