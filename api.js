@@ -2,7 +2,20 @@
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJ2KxWU1ri2mjk1EGu4-eYvAJrLsjSUa2uwgxZosxUvEydi9LsADYhYcWGETrsAnsJ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
+
+// --- INTERCEPTOR DE PETICIONES (AUDITORÍA) ---
+// Sobrescribimos 'fetch' originario para inyectar automáticamente el email
+// del usuario activo en todas las llamadas a la API de Google.
+if (!window.originalFetch) {
+    window.originalFetch = window.fetch;
+    window.fetch = async function(url, options) {
+        if (typeof url === 'string' && url.includes(API_URL) && window.currentUser && window.currentUser.email) {
+            url += (url.includes('?') ? '&' : '?') + 'email=' + encodeURIComponent(window.currentUser.email);
+        }
+        return window.originalFetch(url, options);
+    };
+}
 
 const API = {
     // --- GASTOS ---
