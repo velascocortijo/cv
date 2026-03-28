@@ -1161,9 +1161,48 @@ function renderProfile() {
     if (adminTools) {
         if (currentUser.email === 'velascocortijo@gmail.com') {
             adminTools.classList.remove('hidden');
+            renderAdminDashboard();
         } else {
             adminTools.classList.add('hidden');
         }
+    }
+}
+
+let adminChartInstance = null;
+async function renderAdminDashboard() {
+    const canvas = document.getElementById('admin-chart-balance');
+    if (!canvas) return;
+    
+    try {
+        const balanceData = await CortijoAPI.getBalance('');
+        
+        if (adminChartInstance) adminChartInstance.destroy();
+        
+        adminChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Gastos Totales', 'Ingresos Totales'],
+                datasets: [{
+                    data: [balanceData.totalGastos || 0, balanceData.totalIngresos || 0],
+                    backgroundColor: ['#e74c3c', '#27ae60'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { 
+                        display: true, 
+                        text: 'Balance Histórico Neto: ' + (balanceData.balanceNeto || 0).toFixed(2) + ' €',
+                        font: { size: 16 }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Error al cargar dashboard: ", e);
     }
 }
 
@@ -1183,7 +1222,7 @@ async function manualBackup() {
     document.getElementById('loader').style.display = 'flex';
     
     try {
-        const result = await API.triggerBackup(currentUser.email);
+        const result = await CortijoAPI.triggerBackup(currentUser.email);
         if (result && result.success) {
             statusEl.style.color = 'var(--success)';
             statusEl.textContent = '✅ ' + result.message;
@@ -1210,7 +1249,7 @@ async function loadAuditLog() {
     container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">⏱️ Cargando historial...</p>';
 
     try {
-        const records = await API.listAudit(currentUser.email);
+        const records = await CortijoAPI.listAudit(currentUser.email);
 
         if (!Array.isArray(records) || records.length === 0) {
             container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No hay actividad registrada todavía.</p>';
