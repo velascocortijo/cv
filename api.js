@@ -4,23 +4,18 @@
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
-// --- INTERCEPTOR DE PETICIONES (AUDITORÍA) ---
-// Sobrescribimos 'fetch' originario para inyectar automáticamente el email
-// del usuario activo en todas las llamadas a la API de Google.
-if (!window.originalFetch) {
-    window.originalFetch = window.fetch;
-    window.fetch = async function(url, options) {
-        if (typeof url === 'string' && url.includes(API_URL) && window.currentUser && window.currentUser.email) {
-            url += (url.includes('?') ? '&' : '?') + 'email=' + encodeURIComponent(window.currentUser.email);
-        }
-        return window.originalFetch(url, options);
-    };
-}
+// --- WRAPPER SEGURO DE PETICIONES ---
+const fetchAPI = async (url, options) => {
+    if (window.currentUser && window.currentUser.email && !url.includes('email=')) {
+        url += (url.includes('?') ? '&' : '?') + 'email=' + encodeURIComponent(window.currentUser.email);
+    }
+    return fetch(url, options);
+};
 
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
-        const response = await fetch(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -30,7 +25,7 @@ const API = {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
         const payload = { ...expenseData, url_drive: urlDrive || expenseData.url_drive };
-        const response = await fetch(API_URL + '?action=create', {
+        const response = await fetchAPI(API_URL + '?action=create', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -41,7 +36,7 @@ const API = {
 
     async updateExpense(id, data) {
         const payload = { id, ...data };
-        const response = await fetch(API_URL + '?action=update', {
+        const response = await fetchAPI(API_URL + '?action=update', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -51,7 +46,7 @@ const API = {
     },
 
     async deleteExpense(id) {
-        const response = await fetch(API_URL + '?action=delete', {
+        const response = await fetchAPI(API_URL + '?action=delete', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -62,7 +57,7 @@ const API = {
 
     // --- INGRESOS ---
     async getIncome(year) {
-        const response = await fetch(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -72,7 +67,7 @@ const API = {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
         const payload = { ...incomeData, url_drive: urlDrive || incomeData.url_drive };
-        const response = await fetch(API_URL + '?action=addIncome', {
+        const response = await fetchAPI(API_URL + '?action=addIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -83,7 +78,7 @@ const API = {
 
     async updateIncome(id, data) {
         const payload = { id, ...data };
-        const response = await fetch(API_URL + '?action=updateIncome', {
+        const response = await fetchAPI(API_URL + '?action=updateIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -93,7 +88,7 @@ const API = {
     },
 
     async deleteIncome(id) {
-        const response = await fetch(API_URL + '?action=deleteIncome', {
+        const response = await fetchAPI(API_URL + '?action=deleteIncome', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -104,7 +99,7 @@ const API = {
 
     // --- DOCUMENTOS ---
     async getDocuments(year) {
-        const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -119,7 +114,7 @@ const API = {
                     base64: base64,
                     fileName: file.name
                 };
-                const res = await fetch(API_URL + '?action=uploadAndRecord', {
+                const res = await fetchAPI(API_URL + '?action=uploadAndRecord', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -135,7 +130,7 @@ const API = {
     },
 
     async updateDocument(id, data) {
-        const response = await fetch(API_URL + '?action=updateDocument', {
+        const response = await fetchAPI(API_URL + '?action=updateDocument', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -145,7 +140,7 @@ const API = {
     },
 
     async deleteDocument(id) {
-        const response = await fetch(API_URL + '?action=deleteDocument', {
+        const response = await fetchAPI(API_URL + '?action=deleteDocument', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -156,12 +151,12 @@ const API = {
 
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
-        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
     async addTask(taskData) {
-        const response = await fetch(API_URL + '?action=addTask', {
+        const response = await fetchAPI(API_URL + '?action=addTask', {
             method: 'POST',
             body: JSON.stringify(taskData),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -171,7 +166,7 @@ const API = {
     },
 
     async updateTask(id, data) {
-        const response = await fetch(API_URL + '?action=updateTask', {
+        const response = await fetchAPI(API_URL + '?action=updateTask', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -181,7 +176,7 @@ const API = {
     },
 
     async deleteTask(id) {
-        const response = await fetch(API_URL + '?action=deleteTask', {
+        const response = await fetchAPI(API_URL + '?action=deleteTask', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -201,7 +196,7 @@ const API = {
                     fileName: file.name,
                     folderName: folderName
                 };
-                const res = await fetch(API_URL + '?action=upload', {
+                const res = await fetchAPI(API_URL + '?action=upload', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -217,18 +212,18 @@ const API = {
     },
 
     async getBalance(year) {
-        const response = await fetch(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
     async checkEmail(email) {
-        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
 
     // --- INVENTARIO ---
     async getInventory() {
-        const response = await fetch(`${API_URL}?action=listInventory`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=listInventory`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -238,7 +233,7 @@ const API = {
             urlDrive = await this.uploadToDrive(file, 'Inventario');
         }
         const payload = { ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetch(API_URL + '?action=addInventory', {
+        const response = await fetchAPI(API_URL + '?action=addInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -253,7 +248,7 @@ const API = {
             urlDrive = await this.uploadToDrive(file, 'Inventario');
         }
         const payload = { id, ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetch(API_URL + '?action=updateInventory', {
+        const response = await fetchAPI(API_URL + '?action=updateInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -263,7 +258,7 @@ const API = {
     },
 
     async deleteInventory(id) {
-        const response = await fetch(API_URL + '?action=deleteInventory', {
+        const response = await fetchAPI(API_URL + '?action=deleteInventory', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -274,13 +269,13 @@ const API = {
 
     // --- COPIAS DE SEGURIDAD ---
     async triggerBackup(email) {
-        const response = await fetch(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
 
     // --- AUDITORÍA ---
     async listAudit(email) {
-        const response = await fetch(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetchAPI(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     }
 };
