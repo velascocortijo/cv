@@ -3,7 +3,6 @@ let currentUser = null;
 let currentDocYear = new Date().getFullYear();
 let currentTaskYear = new Date().getFullYear();
 let cachedTasks = [];
-
 // DOM Elements
 const sections = ['dashboard', 'expenses', 'income', 'documents', 'tasks', 'inventory', 'split', 'settings', 'admin'];
 const navLinks = document.querySelectorAll('.nav-link');
@@ -11,23 +10,19 @@ const sectionElements = sections.reduce((acc, section) => {
     acc[section] = document.getElementById(`${section}-section`);
     return acc;
 }, {});
-
 // Navigation
 function showSection(sectionId) {
     Object.values(sectionElements).forEach(el => {
-        if (el) el.classList.remove('active');
+        if (el) el.classList.add('hidden'); // Use hidden class consistently
     });
-    const target = sectionElements[sectionId];
-    if (target) target.classList.add('active');
-
+    const target = sectionElements[sectionId] || document.getElementById(`${sectionId}-section`);
+    if (target) target.classList.remove('hidden');
     navLinks.forEach(link => {
         link.classList.remove('active');
         if (link.dataset.section === sectionId) link.classList.add('active');
     });
-
     // Close mobile menu if open
     document.getElementById('mobile-menu')?.classList.add('hidden');
-
     // Trigger section-specific loading if needed
     if (sectionId === 'split') renderExpenseSplit();
     if (sectionId === 'inventory') loadInventoryData().then(() => renderInventory());
@@ -35,18 +30,27 @@ function showSection(sectionId) {
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'admin') renderAudit();
 }
-
+// UI HELPERS
+function showLogin() { document.getElementById('auth-container').classList.remove('hidden'); }
+function hideLogin() { document.getElementById('auth-container').classList.add('hidden'); }
+function signOut() { logout(); }
+function toggleMobileMenu() { document.getElementById('private-nav')?.classList.toggle('hidden'); }
+// ALIASES FOR INTERFACE (Matches index.html)
+function changeExpYear(year) { changeExpenseYear(year); }
+function changeIncYear(year) { changeIncomeYear(year); }
+// Modal control
+function openExpenseModal() { openAddExpenseModal(); }
+function openIncomeModal() { openAddIncomeModal(); }
+function openInventoryModal() { openAddInventoryModal(); }
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(link.dataset.section);
     });
 });
-
 document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
     document.getElementById('mobile-menu')?.classList.toggle('hidden');
 });
-
 // --- GOOGLE IDENTITY SERVICES ---
 function initAuth() {
     google.accounts.id.initialize({
@@ -58,7 +62,6 @@ function initAuth() {
         { theme: "outline", size: "large", text: "signin_with", shape: "pill" }
     );
 }
-
 // --- DASHBOARD ---
 async function updateDashboard() {
     const year = new Date().getFullYear();
@@ -71,11 +74,9 @@ async function updateDashboard() {
         console.error("Dashboard Error:", e);
     }
 }
-
 // --- EXPENSES ---
 let expenseYear = new Date().getFullYear();
 function changeExpenseYear(year) { expenseYear = year; document.getElementById('expense-year-display').textContent = year; loadExpenses(); }
-
 async function loadExpenses() {
     const tableBody = document.querySelector('#expenses-table tbody');
     if (!tableBody) return;
@@ -101,7 +102,6 @@ async function loadExpenses() {
         tableBody.innerHTML = '<tr><td colspan="6">Error al cargar datos.</td></tr>';
     }
 }
-
 function openAddExpenseModal() {
     openModal('Registrar Gasto', `
         <form id="expense-form">
@@ -126,7 +126,6 @@ function openAddExpenseModal() {
             <button type="submit" class="btn-primary" style="width:100%">Guardar Gasto</button>
         </form>
     `);
-
     document.getElementById('expense-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
@@ -140,7 +139,6 @@ function openAddExpenseModal() {
             categoria: document.getElementById('ecat').value,
             pagado_por: document.getElementById('epag').value
         };
-
         const file = document.getElementById('efile').files[0];
         try {
             await API.createExpense(data, file, new Date(data.fecha).getFullYear());
@@ -152,11 +150,9 @@ function openAddExpenseModal() {
         }
     };
 }
-
 // --- INCOME ---
 let incomeYear = new Date().getFullYear();
 function changeIncomeYear(year) { incomeYear = year; document.getElementById('income-year-display').textContent = year; loadIncome(); }
-
 async function loadIncome() {
     const tableBody = document.querySelector('#income-table tbody');
     if (!tableBody) return;
@@ -179,7 +175,6 @@ async function loadIncome() {
         tableBody.innerHTML = '<tr><td colspan="6">Error al cargar datos.</td></tr>';
     }
 }
-
 function openAddIncomeModal() {
     openModal('Registrar Ingreso', `
         <form id="income-form">
@@ -212,7 +207,6 @@ function openAddIncomeModal() {
         loadIncome(); updateDashboard(); closeModal();
     };
 }
-
 // --- REPARTO DE GASTOS (INTEGRACIÓN ANGELITA) ---
 async function renderExpenseSplit() {
     const yearSelect = document.getElementById('split-year-select');
@@ -231,13 +225,10 @@ async function renderExpenseSplit() {
     const summaryBox = document.getElementById('split-summary-box');
     const balancesContainer = document.getElementById('split-balances-container');
     const debtsContainer = document.getElementById('split-debts-container');
-
     if (!summaryBox || !balancesContainer || !debtsContainer) return;
-
     summaryBox.innerHTML = '<p>Cargando datos...</p>';
     balancesContainer.innerHTML = '<p>Calculando saldos...</p>';
     debtsContainer.innerHTML = '<p>Buscando deudas...</p>';
-
     document.getElementById('loader').style.display = 'flex';
     let expenses = [];
     try {
@@ -258,7 +249,6 @@ async function renderExpenseSplit() {
     Object.keys(percentages).forEach(person => {
         paidByPerson[person] = 0;
     });
-
     // Calculate total expenses and amount paid by each person
     expenses.forEach(exp => {
         const amount = parseFloat(exp.cantidad) || 0;
@@ -274,10 +264,8 @@ async function renderExpenseSplit() {
             percentages[payer] = 0; // Asignamos 0% por defecto
         }
     });
-
     const activeBalances = [];
     const excludedData = [];
-
     // 1. Clasificar y calcular saldos
     Object.keys(paidByPerson).forEach(person => {
         const paid = paidByPerson[person];
@@ -285,7 +273,6 @@ async function renderExpenseSplit() {
         const shouldHavePaid = (totalExpenses * percentage) / 100;
         const balance = paid - shouldHavePaid;
         const status = window.CONFIG.FAMILY_STATUS[person] || 'activo';
-
         if (status === 'excluida_gastos') {
             // Caso Angelita: Calculamos su aportación ideal pero no participa en reembolsos
             if (percentage > 0) {
@@ -303,13 +290,11 @@ async function renderExpenseSplit() {
             }
         }
     });
-
     // 2. Render Totales Globales
     summaryBox.innerHTML = `
         <h3 style="font-size:2rem; color:var(--primary); margin-bottom:0.5rem;">${totalExpenses.toFixed(2)} €</h3>
         <p style="color:var(--text-muted);">Gasto total familiar en ${selectedYear}</p>
     `;
-
     // 3. Render Saldos Individuales (Solo los activos)
     balancesContainer.innerHTML = activeBalances.map(b => {
         const balanceColor = b.balance >= 0 ? 'var(--success)' : 'var(--danger)';
@@ -326,10 +311,8 @@ async function renderExpenseSplit() {
             </div>
         `;
     }).join('');
-
     // 4. Mostrar familiares excluidos
     renderExcludedBalances(excludedData);
-
     // 5. Deudas directas (Tricount simplified)
     debtsContainer.innerHTML = `
         <div style="text-align:center; padding:1.5rem; background:var(--bg-main); border-radius:12px; margin-bottom:20px; border:1px dashed var(--border);">
@@ -340,12 +323,10 @@ async function renderExpenseSplit() {
             <p style="text-align:center; padding:10px; color:var(--text-muted);">Calculando optimización de pagos...</p>
         </div>
     `;
-
     // 6. Generar Reembolsos Optimizados (Tricount) entre ACTIVOS
     const optimizedPayments = generarReembolsos(activeBalances);
     mostrarReembolsos(optimizedPayments);
 }
-
 function toggleSplitView() {
     const btn = document.getElementById('toggleViewBtn');
     const viewA = document.getElementById('split-view-a');
@@ -361,7 +342,6 @@ function toggleSplitView() {
         btn.textContent = 'Ver Saldos Individuales';
     }
 }
-
 // Algoritmo de liquidación simplificada (Estilo Tricount/Splitwise)
 function generarReembolsos(balances) {
     let debtors = balances.filter(b => b.balance < 0).map(b => ({ person: b.person, amount: Math.abs(b.balance) }));
@@ -386,7 +366,6 @@ function generarReembolsos(balances) {
     
     return payments;
 }
-
 function mostrarReembolsos(payments) {
     const container = document.getElementById('tricount-payments-container');
     if (!container) return;
@@ -410,7 +389,6 @@ function mostrarReembolsos(payments) {
         </div>
     `).join('');
 }
-
 // --- INVENTARIO ---
 let inventoryData = [];
 async function loadInventoryData() {
@@ -420,7 +398,6 @@ async function loadInventoryData() {
         console.error("Inventory Load Error:", e);
     }
 }
-
 function renderInventory() {
     const container = document.getElementById('inventory-grid');
     if (!container) return;
@@ -429,7 +406,6 @@ function renderInventory() {
         container.innerHTML = '<p>No hay artículos registrados.</p>';
         return;
     }
-
     container.innerHTML = inventoryData.map(item => `
         <div class="inventory-card">
             ${item.foto_url ? `<img src="${item.foto_url}" class="inventory-img" alt="${item.articulo}">` : '<div class="inventory-img" style="background:var(--bg-main);display:flex;align-items:center;justify-content:center;">📦</div>'}
@@ -449,7 +425,6 @@ function renderInventory() {
         </div>
     `).join('');
 }
-
 function openAddInventoryModal() {
     openModal('Añadir Artículo', `
         <form id="inv-form">
@@ -483,7 +458,6 @@ function openAddInventoryModal() {
     `);
     document.getElementById('inv-form').onsubmit = handleAddInventorySubmit;
 }
-
 async function handleAddInventorySubmit(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -500,7 +474,6 @@ async function handleAddInventorySubmit(e) {
         ubicacion: document.getElementById('invloc').value,
         timestamp: new Date().toISOString()
     };
-
     const file = document.getElementById('invfile').files[0];
     try {
         await API.addInventory(data, file);
@@ -511,11 +484,9 @@ async function handleAddInventorySubmit(e) {
         btn.disabled = false; btn.textContent = 'Registrar Artículo';
     }
 }
-
 function openEditInventoryModal(id) {
     const item = inventoryData.find(i => i.id == id);
     if (!item) return;
-
     openModal('Editar Artículo', `
         <form id="edit-inv-form">
             <div class="form-group"><label>Artículo</label><input type="text" id="einvart" value="${item.articulo}" required></div>
@@ -536,7 +507,6 @@ function openEditInventoryModal(id) {
             <button type="submit" class="btn-primary" style="width:100%">Actualizar Artículo</button>
         </form>
     `);
-
     document.getElementById('edit-inv-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
@@ -553,7 +523,6 @@ function openEditInventoryModal(id) {
                 precio: parseFloat(document.getElementById('einvpr').value) || 0,
                 observaciones: document.getElementById('einvobs').value
             };
-
             await API.updateInventory(id, updatedData, file);
             addAudit(`Inventario: Editado ${updatedData.articulo}`);
             loadInventoryData().then(() => { renderInventory(); closeModal(); });
@@ -563,7 +532,6 @@ function openEditInventoryModal(id) {
         }
     };
 }
-
 async function deleteInventoryItem(id) {
     if (confirm("¿Estás seguro de que deseas eliminar este artículo del inventario?")) {
         try {
@@ -575,10 +543,8 @@ async function deleteInventoryItem(id) {
         }
     }
 }
-
 // --- DOCUMENTS ---
 function changeDocYear(year) { currentDocYear = year; document.getElementById('doc-year-display').textContent = year; renderDocuments(); }
-
 let cachedDocs = [];
 async function renderDocuments() {
     const list = document.getElementById('document-list');
@@ -607,11 +573,9 @@ async function renderDocuments() {
         list.innerHTML = `<p style="color:var(--danger)">Error al cargar documentos: ${e.message}</p>`;
     }
 }
-
 function openEditDocModal(id) {
     const doc = cachedDocs.find(d => d.id == id);
     if (!doc) return;
-
     openModal('Editar Documento', `
         <form id="edit-doc-form">
             <div class="form-group"><label>Nombre del Archivo</label><input type="text" id="edon" value="${doc.name}" required></div>
@@ -625,18 +589,15 @@ function openEditDocModal(id) {
         renderDocuments(); closeModal();
     };
 }
-
 async function confirmDeleteDocument(id) {
     if (confirm("¿Seguro que quieres eliminar este documento? Se borrará de la lista (el archivo seguirá en Drive).")) {
         await API.deleteDocument(id);
         renderDocuments();
     }
 }
-
 async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     document.getElementById('loader').style.display = 'flex';
     try {
         const docData = {
@@ -647,7 +608,6 @@ async function handleFileUpload(event) {
             date: new Date().toISOString(),
             year: currentDocYear
         };
-
         await API.uploadAndRecordDocument(docData, file);
         alert("¡Documento subido y registrado con éxito!");
         renderDocuments();
@@ -658,7 +618,6 @@ async function handleFileUpload(event) {
         event.target.value = ''; // Limpiar input
     }
 }
-
 function previewDocument(url) {
     if (!url) return alert("Enlace no disponible");
     const match = url.match(/[-\w]{25,}/);
@@ -666,7 +625,6 @@ function previewDocument(url) {
     const id = match[0];
     openModal('Vista Previa', `<iframe src="https://drive.google.com/file/d/${id}/preview" style="width:100%;height:500px;border:none;border-radius:12px;"></iframe>`);
 }
-
 function downloadDocument(url) {
     if (!url) return alert("Enlace no disponible");
     const match = url.match(/[-\w]{25,}/);
@@ -677,21 +635,17 @@ function downloadDocument(url) {
         window.open(url, '_blank');
     }
 }
-
 // --- TASKS ---
 function changeTaskYear(year) { currentTaskYear = year; document.getElementById('task-year-display').textContent = year; renderTasks(); }
-
 async function renderTasks() {
     const lists = { waiting: document.getElementById('list-waiting'), running: document.getElementById('list-running'), completed: document.getElementById('list-completed') };
     Object.values(lists).forEach(l => l.innerHTML = '...');
     try {
         const data = await API.getTasks(currentTaskYear);
-
         if (!Array.isArray(data)) {
             console.error("Respuesta del servidor no es un array:", data);
             throw new Error((data && data.error) ? data.error : "Error desconocido al obtener tareas");
         }
-
         cachedTasks = data.map(t => {
             let subs = [];
             try {
@@ -705,16 +659,13 @@ async function renderTasks() {
             subs = subs.map(s => typeof s === 'string' ? { text: s, completed: false, notes: '' } : { notes: '', ...s });
             return { ...t, subtasks: subs, notes: t.notes || '' };
         });
-
         Object.values(lists).forEach(l => l.innerHTML = '');
         let counts = { waiting: 0, running: 0, completed: 0 };
-
         cachedTasks.forEach(task => {
             counts[task.status]++;
             const completedSubs = task.subtasks.filter(s => s.completed).length;
             const totalSubs = task.subtasks.length;
             const percent = totalSubs > 0 ? Math.round((completedSubs / totalSubs) * 100) : 0;
-
             const card = document.createElement('div');
             card.className = 'task-card'; card.dataset.id = task.id;
             card.innerHTML = `
@@ -747,7 +698,6 @@ async function renderTasks() {
         Object.values(lists).forEach(l => l.innerHTML = 'Error');
     }
 }
-
 function initSortable() {
     ['list-waiting', 'list-running', 'list-completed'].forEach(id => {
         const el = document.getElementById(id);
@@ -762,7 +712,6 @@ function initSortable() {
         });
     });
 }
-
 function openTaskModal() {
     openModal('Nueva Tarea', `
         <form id="t-form">
@@ -786,7 +735,6 @@ function openTaskModal() {
                     </div>
                 </div>
             </div>
-
             <div class="form-group"><label>Prioridad</label>
                 <select id="tp">
                     <option value="low">Baja</option>
@@ -799,14 +747,12 @@ function openTaskModal() {
     `);
     document.getElementById('t-form').onsubmit = async (e) => {
         e.preventDefault();
-
         const subRows = document.querySelectorAll('#sub-create-list .subtask-edit-row');
         const subtasks = Array.from(subRows).map(row => ({
             text: row.querySelector('.sub-text').value.trim(),
             completed: row.querySelector('.sub-check').checked,
             notes: row.querySelector('.sub-obs').value.trim()
         })).filter(s => s.text !== "");
-
         await API.addTask({
             id: Date.now(),
             title: document.getElementById('tn').value,
@@ -820,7 +766,6 @@ function openTaskModal() {
         renderTasks(); closeModal();
     };
 }
-
 function addNewSubtaskFieldCreate() {
     const container = document.getElementById('sub-create-list');
     const div = document.createElement('div');
@@ -836,11 +781,9 @@ function addNewSubtaskFieldCreate() {
     `;
     container.appendChild(div);
 }
-
 function openEditTaskModal(id) {
     const task = cachedTasks.find(t => t.id == id);
     if (!task) return;
-
     openModal('Editar Tarea', `
         <form id="et-form">
             <div class="form-group"><label>Título</label><input type="text" id="etn" value="${task.title}" required></div>
@@ -848,7 +791,6 @@ function openEditTaskModal(id) {
             <div class="form-group"><label>Observaciones</label>
                 <textarea id="etnotes" rows="2" style="font-size:0.9rem;">${task.notes || ''}</textarea>
             </div>
-
             <div class="subtasks-editor" style="margin: 1rem 0;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
                     <label style="margin:0;">Subprocesos</label>
@@ -867,7 +809,6 @@ function openEditTaskModal(id) {
                     `).join('')}
                 </div>
             </div>
-
             <div class="form-group"><label>Prioridad</label>
                 <select id="etp">
                     <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
@@ -881,10 +822,8 @@ function openEditTaskModal(id) {
             </div>
         </form>
     `);
-
     document.getElementById('et-form').onsubmit = async (e) => {
         e.preventDefault();
-
         // Recoger todos los subprocesos de la interfaz
         const subRows = document.querySelectorAll('.subtask-edit-row');
         const updatedSubtasks = Array.from(subRows).map(row => ({
@@ -892,19 +831,16 @@ function openEditTaskModal(id) {
             completed: row.querySelector('.sub-check').checked,
             notes: row.querySelector('.sub-obs').value.trim()
         })).filter(s => s.text !== "");
-
         await API.updateTask(id, {
             title: document.getElementById('etn').value,
             notes: document.getElementById('etnotes').value,
             priority: document.getElementById('etp').value,
             subtasks: JSON.stringify(updatedSubtasks)
         });
-
         renderTasks();
         closeModal();
     };
 }
-
 function addNewSubtaskField() {
     const container = document.getElementById('sub-edit-list');
     const div = document.createElement('div');
@@ -920,28 +856,23 @@ function addNewSubtaskField() {
     `;
     container.appendChild(div);
 }
-
 async function updateSubtaskStatus(taskId, subIdx, isCompleted) {
     const task = cachedTasks.find(t => t.id == taskId);
     if (!task) return;
-
     task.subtasks[subIdx].completed = isCompleted;
     await API.updateTask(taskId, { subtasks: JSON.stringify(task.subtasks) });
     renderTasks();
 }
-
 async function confirmDeleteTask(id) {
     if (confirm("¿Seguro que quieres borrar esta tarea?")) {
         await API.deleteTask(id);
         renderTasks(); closeModal();
     }
 }
-
 // --- AUTH ---
 async function handleCredentialResponse(r) {
     const p = JSON.parse(atob(r.credential.split('.')[1]));
     const email = p.email;
-
     document.getElementById('loader').style.display = 'flex';
     try {
         console.log("Verificando permisos para:", email);
@@ -960,7 +891,6 @@ async function handleCredentialResponse(r) {
         document.getElementById('loader').style.display = 'none';
     }
 }
-
 function setupApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
@@ -969,31 +899,26 @@ function setupApp() {
     updateDashboard();
     showSection('dashboard');
 }
-
 function logout() {
     localStorage.removeItem('user');
     location.reload();
 }
-
 // --- UTILS ---
 function formatDateDisplay(iso) {
     if (!iso) return '-';
     const d = new Date(iso);
     return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-
 function openModal(title, content) {
     document.getElementById('modal-title').textContent = title;
     document.getElementById('modal-body').innerHTML = content;
     document.getElementById('modal-container').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
-
 function closeModal() {
     document.getElementById('modal-container').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
-
 // --- ADMIN / AUDITORIA ---
 async function renderAudit() {
     const container = document.getElementById('audit-list');
@@ -1017,11 +942,9 @@ async function renderAudit() {
         container.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
     }
 }
-
 function addAudit(actionText) {
     // Audit is mostly handled by backend, but we can call it if needed.
 }
-
 // Initialize
 window.onload = () => {
     const savedUser = localStorage.getItem('user');
@@ -1031,10 +954,8 @@ window.onload = () => {
     } else {
         initAuth();
     }
-
     lucide.createIcons();
 };
-
 // --- HELPER PARA FAMILIARES EXCLUIDOS ---
 function renderExcludedBalances(data) {
     const container = document.getElementById('excluded-balances-container');
@@ -1044,7 +965,6 @@ function renderExcludedBalances(data) {
         container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">No hay familiares excluidos de las liquidaciones intermedias.</p>`;
         return;
     }
-
     container.innerHTML = data.map(ex => `
         <div class="card" style="background:var(--bg-main); padding:1rem; border-radius:12px; border-left:4px solid var(--accent); margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1063,7 +983,6 @@ function renderExcludedBalances(data) {
         </div>
     `).join('');
 }
-
 async function saveExcludedPending(person, year, amount) {
     try {
         const payload = {
@@ -1078,28 +997,22 @@ async function saveExcludedPending(person, year, amount) {
         console.warn("Error guardando saldo pendiente:", e);
     }
 }
-
 async function calculateFinalLiquidation() {
     const yearSelect = document.getElementById('split-year-select');
     const selectedYear = yearSelect ? yearSelect.value : new Date().getFullYear();
     const resultContainer = document.getElementById('final-liquidation-result');
-
     if (!resultContainer) return;
-
     resultContainer.innerHTML = '<p style="text-align:center; padding:2rem;">Calculando liquidación final anual...</p>';
     document.getElementById('loader').style.display = 'flex';
-
     try {
         // Nueva llamada atómica al backend
         const res = await CortijoAPI.calculateSettlement(selectedYear);
         
         const { beneficioNeto, parteAngelita, saldoPendiente, liquidacionFinal, ingresosTotales, gastosTotales, porcentajeFamiliar } = res;
-
         const isPositive = liquidacionFinal >= 0;
         const color = isPositive ? 'var(--success)' : 'var(--danger)';
         const sign = isPositive ? '+' : '';
         const icon = isPositive ? '💰' : '💸';
-
         let html = `
             <div style="background:var(--bg-card); padding:2rem; border-radius:20px; border:1px solid var(--border); box-shadow:var(--shadow-lg); text-align:center;">
                 <h3 style="margin-bottom:1.5rem; color:var(--primary);">Resultado Liquidación Final ${selectedYear}</h3>
@@ -1118,7 +1031,6 @@ async function calculateFinalLiquidation() {
                         <div style="font-size:1.2rem; font-weight:700; color:var(--primary);">${beneficioNeto.toFixed(2)}€</div>
                     </div>
                 </div>
-
                 <div style="margin: 2rem 0; padding: 1.5rem; border-radius:15px; background: ${isPositive ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)'};">
                     <div style="font-size:1rem; color:var(--text-main); margin-bottom:10px;">Parte de Angelita (${porcentajeFamiliar}%): <strong>${parteAngelita.toFixed(2)}€</strong></div>
                     <div style="font-size:1rem; color:var(--text-main); margin-bottom:20px;">Menos suscripciones/gastos acumulados: <strong style="color:var(--danger);">${saldoPendiente.toFixed(2)}€</strong></div>
@@ -1126,7 +1038,6 @@ async function calculateFinalLiquidation() {
                     <div style="font-size:0.9rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Liquidación Neta Final</div>
                     <div style="font-size:2.5rem; font-weight:800; color:${color};">${sign}${liquidacionFinal.toFixed(2)} €</div>
                 </div>
-
                 <div style="background:var(--bg-main); padding:1rem; border-radius:12px; font-size:0.9rem; display:flex; align-items:center; gap:15px; justify-content:center;">
                     <span style="font-size:1.5rem;">${icon}</span>
                     <span style="text-align:left;">${isPositive ? 'Se debe entregar esta cantidad a Angelita (vía su tutor).' : 'Angelita (tutor) debe ingresar esta cantidad para cubrir saldos.'}</span>
