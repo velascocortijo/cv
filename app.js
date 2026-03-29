@@ -1161,48 +1161,9 @@ function renderProfile() {
     if (adminTools) {
         if (currentUser.email === 'velascocortijo@gmail.com') {
             adminTools.classList.remove('hidden');
-            renderAdminDashboard();
         } else {
             adminTools.classList.add('hidden');
         }
-    }
-}
-
-let adminChartInstance = null;
-async function renderAdminDashboard() {
-    const canvas = document.getElementById('admin-chart-balance');
-    if (!canvas) return;
-    
-    try {
-        const balanceData = await CortijoAPI.getBalance('');
-        
-        if (adminChartInstance) adminChartInstance.destroy();
-        
-        adminChartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Gastos Totales', 'Ingresos Totales'],
-                datasets: [{
-                    data: [balanceData.totalGastos || 0, balanceData.totalIngresos || 0],
-                    backgroundColor: ['#e74c3c', '#27ae60'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    title: { 
-                        display: true, 
-                        text: 'Balance Histórico Neto: ' + (balanceData.balanceNeto || 0).toFixed(2) + ' €',
-                        font: { size: 16 }
-                    }
-                }
-            }
-        });
-    } catch (e) {
-        console.error("Error al cargar dashboard: ", e);
     }
 }
 
