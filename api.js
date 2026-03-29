@@ -2,7 +2,7 @@
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwwQhpbhrKurmhLG93HtZ9IBUHsjkFfpJrlqHJJEheadIXtPKGpJBbNvxIV78wCq9A/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxVoH8zOCP8gGxNY0OvJesxgVyG9oCi4KDl0b8RvzhpxV-Bqt5H9a7mwxGDeON55LMt/exec';
 
 // --- WRAPPER SEGURO DE PETICIONES ---
 const fetchAPI = async (url, options) => {
