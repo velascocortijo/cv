@@ -1,4 +1,4 @@
-// VERSION: V1.1.1 - Icon updated to CV Logo
+// VERSION: V1.1.2 - Social Icons & Undefined Fix added
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */

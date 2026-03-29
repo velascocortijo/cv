@@ -1,4 +1,4 @@
-// VERSION: V1.1.1 - Icon updated to CV Logo
+// VERSION: V1.1.2 - Social Icons & Undefined Fix added
 
 // App State
 let currentUser = null;
@@ -127,8 +127,9 @@ function setupApp() {
     if (privateNav) privateNav.classList.remove('hidden');
     if (userInfo) {
         userInfo.classList.remove('hidden');
-        document.getElementById('user-name').textContent = currentUser.name;
-        document.getElementById('user-avatar').src = currentUser.picture;
+        const nameEl = document.getElementById('user-name'), avEl = document.getElementById('user-avatar');
+        if (nameEl) nameEl.textContent = currentUser.name || '';
+        if (avEl && currentUser.picture) avEl.src = currentUser.picture;
     }
     
     updateDashboard();
