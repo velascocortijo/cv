@@ -1,9 +1,7 @@
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJ2KxWU1ri2mjk1EGu4-eYvAJrLsjSUa2uwgxZosxUvEydi9LsADYhYcWGETrsAnsJ/exec';
-
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 // --- WRAPPER SEGURO DE PETICIONES ---
 const fetchAPI = async (url, options) => {
     if (window.currentUser && window.currentUser.email) {
@@ -20,14 +18,12 @@ const fetchAPI = async (url, options) => {
     }
     return fetch(url, options);
 };
-
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
         const response = await fetchAPI(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async createExpense(expenseData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -42,7 +38,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateExpense(id, data) {
         const payload = { id, ...data };
         const response = await fetchAPI(API_URL + '?action=update', {
@@ -53,7 +48,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteExpense(id) {
         const response = await fetchAPI(API_URL + '?action=delete', {
             method: 'POST',
@@ -63,13 +57,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- INGRESOS ---
     async getIncome(year) {
         const response = await fetchAPI(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async createIncome(incomeData, fileBlob = null, folderName = null) {
         let urlDrive = '';
         if (fileBlob) {
@@ -84,7 +76,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateIncome(id, data) {
         const payload = { id, ...data };
         const response = await fetchAPI(API_URL + '?action=updateIncome', {
@@ -95,7 +86,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteIncome(id) {
         const response = await fetchAPI(API_URL + '?action=deleteIncome', {
             method: 'POST',
@@ -105,13 +95,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- DOCUMENTOS ---
     async getDocuments(year) {
         const response = await fetchAPI(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     // SUBIDA ATÓMICA (Sube archivo y guarda datos en un solo paso para evitar pérdida de URL)
     async uploadAndRecordDocument(docData, file) {
         return new Promise((resolve, reject) => {
@@ -137,7 +125,6 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async updateDocument(id, data) {
         const response = await fetchAPI(API_URL + '?action=updateDocument', {
             method: 'POST',
@@ -147,7 +134,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteDocument(id) {
         const response = await fetchAPI(API_URL + '?action=deleteDocument', {
             method: 'POST',
@@ -157,13 +143,11 @@ const API = {
         });
         return await response.json();
     },
-
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
         const response = await fetchAPI(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async addTask(taskData) {
         const response = await fetchAPI(API_URL + '?action=addTask', {
             method: 'POST',
@@ -173,7 +157,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateTask(id, data) {
         const response = await fetchAPI(API_URL + '?action=updateTask', {
             method: 'POST',
@@ -183,7 +166,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteTask(id) {
         const response = await fetchAPI(API_URL + '?action=deleteTask', {
             method: 'POST',
@@ -193,7 +175,6 @@ const API = {
         });
         return await response.json();
     },
-
     // --- DRIVE (Para Gastos) ---
     async uploadToDrive(file, folderName = null) {
         return new Promise((resolve, reject) => {
@@ -219,23 +200,19 @@ const API = {
             reader.readAsDataURL(file);
         });
     },
-
     async getBalance(year) {
         const response = await fetchAPI(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
     async checkEmail(email) {
         const response = await fetchAPI(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
-
     // --- INVENTARIO ---
     async getInventory() {
         const response = await fetchAPI(`${API_URL}?action=listInventory`, { credentials: 'omit' });
         return await response.json();
     },
-
     async addInventory(data, file = null) {
         let urlDrive = '';
         if (file) {
@@ -250,7 +227,6 @@ const API = {
         });
         return await response.json();
     },
-
     async updateInventory(id, data, file = null) {
         let urlDrive = '';
         if (file) {
@@ -265,7 +241,6 @@ const API = {
         });
         return await response.json();
     },
-
     async deleteInventory(id) {
         const response = await fetchAPI(API_URL + '?action=deleteInventory', {
             method: 'POST',
@@ -275,18 +250,15 @@ const API = {
         });
         return await response.json();
     },
-
     // --- COPIAS DE SEGURIDAD ---
     async triggerBackup(email) {
         const response = await fetchAPI(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
-
     // --- AUDITORÍA ---
     async listAudit(email) {
         const response = await fetchAPI(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     }
 };
-
 window.CortijoAPI = API;
