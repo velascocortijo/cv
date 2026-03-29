@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,9 +12,9 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icono_cortijo.png">
     
-    <!-- Carga de CSS con Cache Busting automático (cambia cada hora) -->
+    <!-- Carga de CSS con Cache Busting automático (cambia cada 5 minutos) -->
     <script>
-        const cacheVersion = Math.floor(Date.now() / 3600000); // Genera un nuevo ID cada hora
+        const cacheVersion = Math.floor(Date.now() / 300000); // Genera un nuevo ID cada 5 mins
         document.write('<link rel="stylesheet" href="style.css?v=' + cacheVersion + '">');
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,12 +26,10 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-
 <body>
     <div id="loader" class="loader-overlay">
         <div class="loader"></div>
     </div>
-
     <header>
         <div class="header-content">
             <div class="logo" style="display: flex; align-items: center; gap: 12px;">
@@ -75,7 +72,6 @@
             </div>
         </div>
     </header>
-
     <main class="container">
         <!-- SECCIÓN DE REPARTO DE GASTOS -->
         <section id="split-section" class="content-section hidden">
@@ -91,7 +87,6 @@
             <div id="split-summary-box" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,0.05); text-align:center;">
                 <!-- Total Gastos y Porcentajes resumen -->
             </div>
-
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px;">
                 <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
                     <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Resumen por Persona</h3>
@@ -99,7 +94,6 @@
                         <!-- Tabla o lista de saldos por persona -->
                     </div>
                 </div>
-
                 <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
                     <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; color:var(--primary);">Deudas Simplificadas</h3>
                     <div id="split-debts-container">
@@ -108,7 +102,6 @@
                 </div>
             </div>
         </section>
-
         <!-- SECCIONES PÚBLICAS -->
         <section id="home-section" class="content-section">
             <div class="hero">
@@ -124,7 +117,6 @@
                 </div>
             </div>
         </section>
-
         <section id="history-section" class="content-section hidden">
             <div class="card">
                 <h2>Nuestra Historia</h2>
@@ -138,7 +130,6 @@
                 </div>
             </div>
         </section>
-
         <section id="contact-section" class="content-section hidden">
             <div class="contact-grid">
                 <div class="card contact-info">
@@ -161,7 +152,6 @@
                 </div>
             </div>
         </section>
-
         <!-- Login Section (This section is initially shown when not logged in) -->
         <section id="login-section" class="hero-section hidden">
             <div class="hero-content">
@@ -176,7 +166,6 @@
                 <img src="hero.jpg" alt="Cortijo Velasco">
             </div>
         </section>
-
         <!-- Calendar Section -->
         <section id="calendar-section" class="content-section hidden">
             <div class="section-header">
@@ -196,7 +185,6 @@
                 <ul id="audit-list"></ul>
             </div>
         </section>
-
         <!-- Expenses Section -->
         <section id="expenses-section" class="content-section hidden">
             <div class="section-header">
@@ -214,7 +202,6 @@
                 </div>
                 <button class="btn-primary" onclick="openExpenseModal()">+ Añadir Gasto</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="expense-search" placeholder="Buscar gastos...">
@@ -235,7 +222,6 @@
                 </table>
             </div>
         </section>
-
         <!-- Income Section -->
         <section id="income-section" class="content-section hidden">
             <div class="section-header">
@@ -253,7 +239,6 @@
                 </div>
                 <button class="btn-primary" onclick="openIncomeModal()">+ Añadir Ingreso</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions">
                     <input type="text" id="income-search" placeholder="Buscar ingresos...">
@@ -274,14 +259,12 @@
                 </table>
             </div>
         </section>
-
         <!-- Inventory Section -->
         <section id="inventory-section" class="content-section hidden">
             <div class="section-header">
                 <h2>Inventario Cortijo</h2>
                 <button class="btn-primary" onclick="openInventoryModal()">+ Añadir Artículo</button>
             </div>
-
             <div class="table-container">
                 <div class="table-actions inventory-filters">
                     <input type="text" id="inventory-search" placeholder="Buscar artículo..."
@@ -317,7 +300,6 @@
                 </table>
             </div>
         </section>
-
         <!-- Tasks Section -->
         <section id="tasks-section" class="content-section hidden">
             <div class="section-header">
@@ -329,7 +311,6 @@
                 </div>
                 <button class="btn-primary" onclick="openTaskModal()">+ Nueva Tarea</button>
             </div>
-
             <div class="kanban-board">
                 <div class="kanban-column" id="col-waiting">
                     <div class="column-header">
@@ -338,7 +319,6 @@
                     </div>
                     <div class="task-list" id="list-waiting"></div>
                 </div>
-
                 <div class="kanban-column" id="col-running">
                     <div class="column-header">
                         <h3>En Ejecución</h3>
@@ -346,7 +326,6 @@
                     </div>
                     <div class="task-list" id="list-running"></div>
                 </div>
-
                 <div class="kanban-column" id="col-completed">
                     <div class="column-header">
                         <h3>Completado</h3>
@@ -356,7 +335,6 @@
                 </div>
             </div>
         </section>
-
         <!-- Documents Section -->
         <section id="documents-section" class="content-section hidden">
             <div class="section-header">
@@ -372,7 +350,6 @@
             </div>
             <div class="document-grid" id="document-list"></div>
         </section>
-
         <!-- Profile Section -->
         <section id="profile-section" class="content-section hidden">
             <div class="section-header">
@@ -396,7 +373,6 @@
                         Forzar Copia de Seguridad
                     </button>
                     <p id="backup-status" style="margin-top: 1rem; font-size: 0.9rem; font-weight: bold;"></p>
-
                     <!-- LOG DE AUDITORÍA -->
                     <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
@@ -411,7 +387,6 @@
             </div>
         </section>
     </main>
-
     <!-- Modals -->
     <div id="modal-container" class="modal-overlay hidden">
         <div class="modal">
@@ -422,18 +397,15 @@
             <div class="modal-body" id="modal-content"></div>
         </div>
     </div>
-
     <footer>
         <p>&copy; 2026 Cortijo Velasco. Exclusivo para la familia.</p>
     </footer>
-
     <!-- Carga de Scripts con Cache Busting -->
     <script>
         document.write('<scr' + 'ipt src="api.js?v=' + cacheVersion + '"></scr' + 'ipt>');
         document.write('<scr' + 'ipt src="settings.js?v=' + cacheVersion + '"></scr' + 'ipt>');
         document.write('<scr' + 'ipt src="app.js?v=' + cacheVersion + '"></scr' + 'ipt>');
     </script>
-
     <!-- Registro PWA Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
