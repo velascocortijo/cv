@@ -8,6 +8,7 @@ let currentExpYear = new Date().getFullYear();
 let currentIncYear = new Date().getFullYear();
 
 let auditLog = [{ date: new Date().toLocaleString(), user: 'Sistema', action: 'Sesión iniciada' }];
+let currentSplitView = 'A'; // 'A' para resumen, 'B' para reembolsos optimizados
 let cachedExpenses = [];
 let cachedIncome = [];
 let cachedInventory = [];
@@ -318,6 +319,85 @@ async function renderExpenseSplit() {
 
         debtsContainer.innerHTML = transactionsHtml;
     }
+
+    // 6. Vista B: Reembolsos Optimizados (Tricount)
+    const optimizedPayments = generarReembolsos(balances);
+    mostrarReembolsos(optimizedPayments);
+}
+
+function toggleSplitView() {
+    const btn = document.getElementById('toggleViewBtn');
+    const viewA = document.getElementById('split-view-a');
+    const viewB = document.getElementById('split-view-b');
+    
+    if (currentSplitView === 'A') {
+        currentSplitView = 'B';
+        viewA.classList.add('hidden');
+        viewB.classList.remove('hidden');
+        btn.textContent = 'Ver Resumen Clásico';
+    } else {
+        currentSplitView = 'A';
+        viewB.classList.add('hidden');
+        viewA.classList.remove('hidden');
+        btn.textContent = 'Ver Reembolsos Optimizados';
+    }
+}
+
+function generarReembolsos(balances) {
+    // Clasificar en deudores (balance negativo) y acreedores (balance positivo)
+    let debtors = balances.filter(b => b.balance < -0.01).map(b => ({ name: b.person, amount: Math.abs(b.balance) }));
+    let creditors = balances.filter(b => b.balance > 0.01).map(b => ({ name: b.person, amount: b.balance }));
+    
+    const reimbursements = [];
+    let i = 0, j = 0;
+    
+    while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
+        
+        const payment = Math.min(debtor.amount, creditor.amount);
+        
+        if (payment > 0) {
+            reimbursements.push({
+                deudor: debtor.name,
+                acreedor: creditor.name,
+                cantidad: payment
+            });
+        }
+        
+        debtor.amount -= payment;
+        creditor.amount -= payment;
+        
+        if (debtor.amount < 0.01) i++;
+        if (creditor.amount < 0.01) j++;
+    }
+    
+    return reimbursements;
+}
+
+function mostrarReembolsos(lista) {
+    const container = document.getElementById('split-reimbursements-container');
+    if (!container) return;
+    
+    if (lista.length === 0) {
+        container.innerHTML = `<p style="text-align:center; padding:2rem; color:var(--text-muted);">🎉 No hay reembolsos pendientes. ¡Cuentas claras!</p>`;
+        return;
+    }
+    
+    container.innerHTML = lista.map(item => `
+        <div style="background:var(--bg-main); padding:1.2rem; border-radius:12px; margin-bottom:12px; display:flex; align-items:center; gap:15px; border:1px solid var(--border);">
+            <div style="width:40px; height:40px; border-radius:50%; background:var(--accent); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                ${item.deudor[0]}
+            </div>
+            <div style="flex-grow:1;">
+                <div style="font-size:1.1rem;"><strong>${item.deudor}</strong> debe pagar a <strong>${item.acreedor}</strong></div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">Transferencia sugerida para saldar cuentas</div>
+            </div>
+            <div style="font-size:1.4rem; font-weight:700; color:var(--primary);">
+                ${item.cantidad.toFixed(2)}€
+            </div>
+        </div>
+    `).join('');
 }
 
 // --- EXPENSES ---
