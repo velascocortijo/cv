@@ -25,6 +25,15 @@ const CONFIG = {
         "Jorge": 12.5,
         "Tete": 12.5,
         "Otros": 0
+    },
+    FAMILY_STATUS: {
+        "Antonio": "activo",
+        "Angelita": "excluida_gastos",
+        "Rebeca": "activo",
+        "Raquel": "activo",
+        "Jorge": "activo",
+        "Tete": "activo",
+        "Otros": "activo"
     }
 };
 window.CONFIG = CONFIG;

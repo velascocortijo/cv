@@ -243,12 +243,30 @@ async function renderExpenseSplit() {
     });
 
     const balances = [];
+    const excludedData = [];
 
     // 1. Calculate balances
     Object.keys(paidByPerson).forEach(person => {
         const paid = paidByPerson[person];
         const percentage = percentages[person] || 0;
         const shouldHavePaid = (totalExpenses * percentage) / 100;
+        const status = window.CONFIG.FAMILY_STATUS[person] || 'activo';
+
+        if (status === 'excluida_gastos') {
+            // Caso especial: Miembros excluidos de gastos intermedios (ej: Angelita)
+            if (percentage > 0) {
+                excludedData.push({
+                    person,
+                    percentage,
+                    totalExpenses,
+                    shouldHavePaid,
+                    year: selectedYear
+                });
+                // Guardar/Actualizar en la BD de Pendientes automáticamente
+                saveExcludedPending(person, selectedYear, shouldHavePaid);
+            }
+            return; // Saltamos este familiar para que no entre en balances activos
+        }
         const balance = paid - shouldHavePaid;
         
         // Evitamos mostrar "Otros" si no ha pagado ni tenía que pagar
@@ -284,6 +302,9 @@ async function renderExpenseSplit() {
             </div>
         `;
     }).join('');
+
+    // MOSTRAR SALDOS EXCLUIDOS
+    renderExcludedBalances(excludedData);
 
     // 4. Algorithm: Deudas con la Comunidad
     const debtors = balances.filter(b => b.balance < -0.01).map(b => ({ ...b, debt: Math.abs(b.balance) }));
@@ -1331,4 +1352,99 @@ async function loadAuditLog() {
     } catch (e) {
         container.innerHTML = '<p style="color:var(--danger); font-size:0.9rem;">❌ Error cargando el historial: ' + e.message + '</p>';
     }
+}
+
+// --- GESTIÓN DE FAMILIARES EXCLUIDOS ---
+function renderExcludedBalances(data) {
+    const container = document.getElementById('excluded-balances-container');
+    if (!container) return;
+    
+    if (data.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">No hay familiares excluidos de las liquidaciones intermedias.</p>`;
+        return;
+    }
+
+    container.innerHTML = data.map(ex => `
+        <div class="card" style="background:var(--bg-main); padding:1rem; border-radius:12px; border-left:4px solid var(--accent); margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>${ex.person}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${ex.percentage}%)</span>
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">Saldo acumulado ideal sobre ${ex.totalExpenses.toFixed(2)}€ de gastos</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:1.1rem; font-weight:bold; color:var(--danger);">${ex.shouldHavePaid.toFixed(2)} €</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">Deuda pendiente año ${ex.year}</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function saveExcludedPending(person, year, amount) {
+    try {
+        await CortijoAPI.savePendingBalance({
+            año: year,
+            familiar: person,
+            aportacionIdeal: amount,
+            fechaActualizacion: new Date().toLocaleString(),
+            notas: "Actualización automática desde Reparto de Gastos"
+        });
+    } catch (e) {
+        console.error("Error al guardar pendiente:", e);
+    }
+}
+
+async function calculateFinalLiquidation() {
+    const yearSelect = document.getElementById('split-year-select');
+    const selectedYear = yearSelect ? yearSelect.value : new Date().getFullYear();
+    const resultContainer = document.getElementById('final-liquidation-result');
+    
+    resultContainer.classList.remove('hidden');
+    resultContainer.innerHTML = '<div style="text-align:center;"><p>🚀 Procesando liquidación final de año...</p></div>';
+
+    try {
+        const expenses = await CortijoAPI.getExpenses(selectedYear);
+        const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.cantidad) || 0), 0);
+        const income = await CortijoAPI.getIncome(selectedYear);
+        const totalIncome = income.reduce((sum, i) => sum + (parseFloat(i.importe) || 0), 0);
+        const beneficioNeto = totalIncome - totalExpenses;
+        const dependents = await CortijoAPI.getPendingBalances();
+        const angelita = dependents.find(d => d.familiar === 'Angelita' && String(d.año) === String(selectedYear));
+        const saldoPendiente = angelita ? parseFloat(angelita.aportacionIdeal) || 0 : 0;
+        const porcentajeAngelita = window.CONFIG.EXPENSE_PERCENTAGES['Angelita'] || 0;
+        const beneficioAngelita = (beneficioNeto * porcentajeAngelita) / 100;
+        const liquidacionFinal = beneficioAngelita - saldoPendiente;
+        const isPositive = liquidacionFinal >= 0;
+
+        let html = `
+            <div style="text-align:center;">
+                <h3 style="color:var(--primary); margin-bottom:1.5rem;">Resumen de Liquidación Final ${selectedYear}</h3>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                    <div style="padding:1rem; background:var(--bg-main); border-radius:12px;">
+                        <div style="font-size:0.8rem; color:var(--text-muted);">Beneficio Neto de la Comunidad</div>
+                        <div style="font-size:1.2rem; font-weight:bold; color:var(--success);">${beneficioNeto.toFixed(2)} €</div>
+                    </div>
+                    <div style="padding:1rem; background:var(--bg-main); border-radius:12px;">
+                        <div style="font-size:0.8rem; color:var(--text-muted);">Aportación Ideal de Angelita</div>
+                        <div style="font-size:1.2rem; font-weight:bold; color:var(--danger);">${saldoPendiente.toFixed(2)} €</div>
+                    </div>
+                </div>
+                
+                <div style="padding:1.5rem; border-radius:16px; background:${isPositive ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)'}; border:2px solid ${isPositive ? 'var(--success)' : 'var(--danger)'};">
+                    <h2 style="color:${isPositive ? 'var(--success)' : 'var(--danger)'}; margin-bottom:0.5rem;">
+                        Liquidación Final: ${liquidacionFinal.toFixed(2)} €
+                    </h2>
+                    <p style="font-weight:600; color:var(--text-main);">
+                        ${isPositive ? '✅ Se debe pagar esta cantidad a Angelita.' : '📥 Angelita (tutor) debe ingresar esta cantidad para cubrir saldos.'}
+                    </p>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-top:10px;">Fórmula: (Beneficio Neto × ${porcentajeAngelita}%) - Gastos Pendientes</p>
+                </div>
+                
+                <button onclick="document.getElementById('final-liquidation-result').classList.add('hidden')" style="margin-top:20px; background:none; border:none; color:var(--text-muted); cursor:pointer; text-decoration:underline;">Cerrar Resumen</button>
+            </div>
+        `;
+        
+        resultContainer.innerHTML = html;
+        window.scrollTo({ top: resultContainer.offsetTop - 100, behavior: 'smooth' });
+    } catch (e) { resultContainer.innerHTML = '<p style="color:var(--danger)">Error: ' + e.message + '</p>'; }
 }

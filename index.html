@@ -111,6 +111,26 @@
                 </div>
             </div>
 
+            <!-- NUEVA SECCIÓN: Saldo pendiente de familiares excluidos -->
+            <div id="excluded-balance-section" style="margin-top:20px; border-top: 2px dashed var(--border); padding-top:20px;">
+                <h3 style="margin-bottom:1.5rem; color:var(--text-main);">Saldo pendiente de familiares excluidos</h3>
+                <div id="excluded-balances-container">
+                    <!-- Cards de familiares excluidos -->
+                </div>
+            </div>
+
+            <!-- BOTÓN LIQUIDACIÓN FINAL -->
+            <div style="margin-top:30px; text-align:center;">
+                <button onclick="calculateFinalLiquidation()" class="btn-primary" style="padding:1rem 2rem; font-size:1.1rem; box-shadow:0 10px 15px -3px rgba(52,211,153,0.3);">
+                    🚀 Ejecutar Liquidación Final del Año
+                </button>
+            </div>
+
+            <!-- RESULTADO LIQUIDACIÓN FINAL -->
+            <div id="final-liquidation-result" class="hidden" style="margin-top:30px; padding:2rem; background:var(--bg-card); border-radius:16px; border:2px solid var(--primary);">
+                <!-- Aquí se mostrará el resultado -->
+            </div>
+
             <!-- Vista B: Reembolsos Sugeridos -->
             <div id="split-view-b" class="hidden" style="margin-bottom:20px;">
                 <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">

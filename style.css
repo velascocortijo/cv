@@ -986,7 +986,7 @@ td {
 /* SECCIONES PÚBLICAS */
 .hero {
     height: 60vh;
-    background: url('https://cortijovelasco.es/hero.jpg?auto=format&fit=crop&q=80&w=2000') center/cover no-repeat;
+    background: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=2000') center/cover no-repeat;
     border-radius: 20px;
     position: relative;
     overflow: hidden;
