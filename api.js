@@ -1,8 +1,9 @@
+// VERSION: V1.1.1 - Icon updated to CV Logo
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzjZJn7dHvFBje_d7msYG6a6QBeGQEShyVl5X2KIGXRH9d2DcSzM7wyhGLV0ZqlWCc/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 // --- WRAPPER SEGURO DE PETICIONES ---
 const fetchAPI = async (url, options) => {

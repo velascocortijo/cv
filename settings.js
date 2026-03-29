@@ -1,3 +1,4 @@
+// VERSION: V1.1.1 - Icon updated to CV Logo
 // Configuración Global - Reemplaza con tus IDs reales
 const CONFIG = {
     GOOGLE_CLIENT_ID: "699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com",
