@@ -2,7 +2,7 @@
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxVoH8zOCP8gGxNY0OvJesxgVyG9oCi4KDl0b8RvzhpxV-Bqt5H9a7mwxGDeON55LMt/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 // --- WRAPPER SEGURO DE PETICIONES ---
 const fetchAPI = async (url, options) => {
@@ -294,6 +294,27 @@ const API = {
     // --- AUDITORÍA ---
     async listAudit(email) {
         const response = await fetchAPI(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    // --- PENDIENTES FAMILIARES EXCLUIDOS ---
+    async savePendingBalance(payload) {
+        const response = await fetchAPI(API_URL + '?action=savePending', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
+        });
+        return await response.json();
+    },
+
+    async getPendingBalances() {
+        const response = await fetchAPI(`${API_URL}?action=listPending`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    async calculateSettlement(year) {
+        const response = await fetchAPI(`${API_URL}?action=calculateSettlement&year=${year}`, { credentials: 'omit' });
         return await response.json();
     }
 };
