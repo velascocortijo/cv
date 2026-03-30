@@ -115,18 +115,18 @@ async function handleCredentialResponse(r) {
 }
 
 function setupApp() {
-    const loginScreen = document.getElementById('login-screen');
-    const appScreen = document.getElementById('app-screen');
     const publicNav = document.getElementById('public-nav');
     const privateNav = document.getElementById('private-nav');
     const userInfo = document.getElementById('user-info');
 
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (appScreen) appScreen.classList.remove('hidden');
     if (publicNav) publicNav.classList.add('hidden');
-    if (privateNav) privateNav.classList.remove('hidden');
+    if (privateNav) {
+        privateNav.classList.remove('hidden');
+        privateNav.style.display = 'flex'; // Forzamos por si JS/CSS entran en conflicto
+    }
     if (userInfo) {
         userInfo.classList.remove('hidden');
+        userInfo.style.display = 'flex';
         const nameEl = document.getElementById('user-name'), avEl = document.getElementById('user-avatar');
         if (nameEl) nameEl.textContent = currentUser.name || '';
         if (avEl && currentUser.picture) avEl.src = currentUser.picture;

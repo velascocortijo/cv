@@ -101,16 +101,22 @@ header {
     color: var(--accent);
 }
 
+nav {
+    display: flex;
+    align-items: center;
+}
+
 nav button {
     background: none;
     border: none;
     font-family: 'Outfit', sans-serif;
     font-weight: 600;
-    margin: 0 1rem;
+    margin: 0 0.75rem;
     cursor: pointer;
     color: var(--text-muted);
     transition: var(--transition);
     position: relative;
+    white-space: nowrap;
 }
 
 nav button:hover,
