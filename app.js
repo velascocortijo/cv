@@ -1,4 +1,4 @@
-// VERSION: V1.2.0 - Gestión Completa de Ingresos con subida a Drive integrada
+// VERSION: V1.3.0 - Motor de Reparto Modelo 7 Pasos Integrado
 
 // App State
 let currentUser = null;
@@ -361,14 +361,186 @@ async function filterExpenses(query) {
     if (balEl) balEl.textContent = `${total.toFixed(2)} €`;
 }
 
+// --- CÁLCULO DE REPARTO: MODELO 7 PASOS ---
+function procesarGastoModelo7Pasos(totalGasto, pagadorReal, participantesActivos) {
+    const pctTeoricos = CONFIG.EXPENSE_PERCENTAGES;
+    const PORCENTAJE_ANGELITA = 25.0;
+
+    // Pasos 1 y 2: Renormalizar porcentajes entre activos al 100%
+    const sumaPctsActivos = participantesActivos.reduce((sum, p) => sum + (pctTeoricos[p] || 0), 0);
+    const splitMap = {};
+    participantesActivos.forEach(p => {
+        splitMap[p] = ((pctTeoricos[p] || 0) / sumaPctsActivos);
+    });
+
+    // Pasos 3, 4 y 5: Deuda y Saldos operativa
+    const balancesItem = {};
+    participantesActivos.forEach(p => {
+        const cuota = totalGasto * splitMap[p];
+        const aportado = (p === pagadorReal) ? totalGasto : 0;
+        balancesItem[p] = aportado - cuota;
+    });
+
+    // Paso 6: Deuda real de Angelita (25% sobre bruto)
+    const deudaAngelita = (totalGasto * PORCENTAJE_ANGELITA) / 100;
+
+    return { balancesItem, deudaAngelita };
+}
+
+async function renderExpenseSplit() {
+    const section = document.getElementById('split-section');
+    if (!section || section.classList.contains('hidden')) return;
+
+    const listBalances = document.getElementById('split-balances-container');
+    const listDebts = document.getElementById('split-debts-container');
+    const listExcluded = document.getElementById('excluded-balances-container');
+    
+    if (!listBalances || !listDebts) return;
+
+    listBalances.innerHTML = '<p style="padding:1rem;">Calculando reparto modelo 7 pasos...</p>';
+
+    try {
+        const expenses = await CortijoAPI.getExpenses(currentExpYear);
+        const activeMembers = CONFIG.FAMILY_MEMBERS.filter(m => CONFIG.FAMILY_STATUS[m] === 'activo');
+        
+        const finalBalances = {};
+        activeMembers.forEach(m => finalBalances[m] = 0);
+        let accumulatedAngelita = 0;
+        let gastoTotalBruto = 0;
+
+        expenses.forEach(exp => {
+            const total = parseFloat(exp.cantidad) || 0;
+            gastoTotalBruto += total;
+
+            // Paso 1: Identificar participantes activos del gasto
+            let participants = [];
+            try {
+                // Intentar leer de la DB o usar a todos los activos por defecto
+                participants = exp.participantes_activos ? JSON.parse(exp.participantes_activos) : activeMembers;
+            } catch(e) { participants = activeMembers; }
+            
+            // Si el pagador no está en la lista de participantes (ej: paga otros), le incluimos para que recupere su dinero
+            const pagador = exp.pagado_por;
+            const todosEnCalculo = Array.from(new Set([...participants, pagador])).filter(p => activeMembers.includes(p));
+
+            const result = procesarGastoModelo7Pasos(total, pagador, todosEnCalculo);
+            
+            // Acumular saldos de hermanos
+            Object.keys(result.balancesItem).forEach(p => {
+                if (finalBalances[p] !== undefined) finalBalances[p] += result.balancesItem[p];
+            });
+
+            // Acumular deuda virtual de Angelita
+            accumulatedAngelita += result.deudaAngelita;
+        });
+
+        // Renderizar Resumen Superior
+        const summaryBox = document.getElementById('split-summary-box');
+        if (summaryBox) {
+            summaryBox.innerHTML = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><small>Gasto Total Bruto</small><h2 style="color:var(--text-main);">${gastoTotalBruto.toFixed(2)}€</h2></div>
+                    <div><small>Reserva Angelita (25%)</small><h2 style="color:var(--primary);">${accumulatedAngelita.toFixed(2)}€</h2></div>
+                </div>
+            `;
+        }
+
+        // Renderizar Tabla de Saldos
+        listBalances.innerHTML = activeMembers.map(m => {
+            const bal = finalBalances[m];
+            const color = bal >= 0 ? 'var(--success)' : 'var(--danger)';
+            return `
+                <div style="display:flex; justify-content:space-between; padding:0.8rem; border-bottom:1px solid var(--border);">
+                    <span>${m}</span>
+                    <strong style="color:${color};">${bal.toFixed(2)} €</strong>
+                </div>`;
+        }).join('');
+
+        // Generar Deudas Simplificadas (Tricount)
+        const payments = generarReembolsos(finalBalances);
+        listDebts.innerHTML = payments.length === 0 ? 
+            '<p style="text-align:center; padding:1.5rem; color:var(--text-muted);">✅ Cuentas al día</p>' :
+            payments.map(p => `
+                <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--primary);">
+                    <strong>${p.from}</strong> debe pagar a <strong>${p.to}</strong> <span style="float:right;">${p.amount.toFixed(2)}€</span>
+                </div>`).join('');
+
+        // Gestión de Angelita (Excluida)
+        if (listExcluded) {
+            listExcluded.innerHTML = `
+                <div class="card" style="border:2px solid var(--primary); background:rgba(52,211,153,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h4 style="margin:0;">Angelita (Aportación Ideal)</h4>
+                            <small style="color:var(--text-muted);">Deuda acumulada por gastos anuales del 25%</small>
+                        </div>
+                        <h3 style="color:var(--primary);">${accumulatedAngelita.toFixed(2)}€</h3>
+                    </div>
+                    <p style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);">* Esta cantidad se deducirá de su reparto de beneficios a final de año.</p>
+                </div>
+            `;
+            // Guardar automáticamente en la hoja Pendientes si ha cambiado
+            CortijoAPI.savePendingBalance({ año: currentExpYear, familiar: 'Angelita', aportacionIdeal: accumulatedAngelita, fechaActualizacion: new Date().toISOString() });
+        }
+
+    } catch (e) {
+        listBalances.innerHTML = '<p>Error al procesar el reparto</p>';
+        console.error(e);
+    }
+}
+
 function openExpenseModal() {
-    openModal('Añadir Gasto', `<form id="ex-form"><div class="form-group"><label>Concepto</label><input type="text" id="exc" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="exa" required></div><div class="form-group"><label>Fecha</label><input type="date" id="exd" value="${new Date().toISOString().split('T')[0]}" required></div><div class="form-group"><label>Pagado por</label><select id="exp">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('')}</select></div><div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div><div class="form-group"><label>Ticket</label><input type="file" id="exf"></div><button type="submit" id="exb" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    const activeMembers = CONFIG.FAMILY_MEMBERS.filter(m => CONFIG.FAMILY_STATUS[m] === 'activo');
+    
+    openModal('Añadir Gasto', `
+        <form id="ex-form">
+            <div class="form-group"><label>Concepto</label><input type="text" id="exc" placeholder="Ej: Pintura Fachada" required></div>
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Importe (€)</label><input type="number" step="0.01" id="exa" required></div>
+                <div class="form-group"><label>Fecha</label><input type="date" id="exd" value="${new Date().toISOString().split('T')[0]}" required></div>
+            </div>
+            <div class="form-group">
+                <label>Pagado por</label>
+                <select id="exp">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('')}</select>
+            </div>
+            <div class="form-group">
+                <label>Participantes Activos (Solo ellos entran en reparto)</label>
+                <div id="active-participants-list" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; background:var(--bg-main); border-radius:8px;">
+                    ${activeMembers.map(m => `
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="active-p" value="${m}" checked> ${m}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div>
+            <div class="form-group"><label>Ticket/Factura</label><input type="file" id="exf"></div>
+            <button type="submit" id="exb" class="btn-primary" style="width:100%">💾 Guardar Gasto Inteligente</button>
+        </form>
+    `);
+
     document.getElementById('ex-form').onsubmit = async (e) => {
         e.preventDefault();
-        const btn = document.getElementById('exb'); btn.disabled = true; btn.textContent = 'Guardando...';
-        const data = { id: Date.now(), concepto: document.getElementById('exc').value, cantidad: document.getElementById('exa').value, fecha: document.getElementById('exd').value, pagado_por: document.getElementById('exp').value, notas: document.getElementById('exn').value, year: currentExpYear };
+        const btn = document.getElementById('exb');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        const selectedParticipants = Array.from(document.querySelectorAll('input[name="active-p"]:checked')).map(cb => cb.value);
+
+        const data = {
+            id: Date.now(),
+            concepto: document.getElementById('exc').value,
+            cantidad: document.getElementById('exa').value,
+            fecha: document.getElementById('exd').value,
+            pagado_por: document.getElementById('exp').value,
+            notas: document.getElementById('exn').value,
+            participantes_activos: JSON.stringify(selectedParticipants),
+            year: currentExpYear
+        };
+
         await CortijoAPI.createExpense(data, document.getElementById('exf').files[0]);
-        renderExpenses(); closeModal();
+        renderExpenses();
+        closeModal();
     };
 }
 
