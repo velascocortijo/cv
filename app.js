@@ -122,7 +122,7 @@ function setupApp() {
     if (publicNav) publicNav.classList.add('hidden');
     if (privateNav) {
         privateNav.classList.remove('hidden');
-        privateNav.style.display = 'flex'; // Forzamos por si JS/CSS entran en conflicto
+        privateNav.style.display = 'flex';
     }
     if (userInfo) {
         userInfo.classList.remove('hidden');
@@ -132,8 +132,7 @@ function setupApp() {
         if (avEl && currentUser.picture) avEl.src = currentUser.picture;
     }
     
-    updateDashboard();
-    showSection('dashboard');
+    showSection('calendar');
 }
 
 function logout() {
