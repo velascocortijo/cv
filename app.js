@@ -1,4 +1,4 @@
-// VERSION: V1.3.2 - Limpieza de Duplicados y Error TypeError Solucionado
+// VERSION: V1.4.0 - Totales Anuales Centralizados y Reparto Inteligente
 
 // App State
 let currentUser = null;
@@ -350,27 +350,54 @@ async function renderExpenseSplit() {
                     <strong>${p.from}</strong> debe pagar a <strong>${p.to}</strong> <span style="float:right;">${p.amount.toFixed(2)}€</span>
                 </div>`).join('');
 
-        // Gestión de Angelita (Excluida)
-        if (listExcluded) {
-            listExcluded.innerHTML = `
-                <div class="card" style="border:2px solid var(--primary); background:rgba(52,211,153,0.05);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <h4 style="margin:0;">Angelita (Aportación Ideal)</h4>
-                            <small style="color:var(--text-muted);">Deuda acumulada por gastos anuales del 25%</small>
-                        </div>
-                        <h3 style="color:var(--primary);">${accumulatedAngelita.toFixed(2)}€</h3>
-                    </div>
-                    <p style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);">* Esta cantidad se deducirá de su reparto de beneficios a final de año.</p>
-                </div>
-            `;
-            // Guardar automáticamente en la hoja Pendientes si ha cambiado
-            CortijoAPI.savePendingBalance({ año: currentExpYear, familiar: 'Angelita', aportacionIdeal: accumulatedAngelita, fechaActualizacion: new Date().toISOString() });
-        }
+        // --- NUEVA SECCIÓN: TOTALES ANUALES (V1.4.0) ---
+        renderAnnualTotalsSection(currentExpYear);
 
     } catch (e) {
         listBalances.innerHTML = '<p>Error al procesar el reparto</p>';
         console.error(e);
+    }
+}
+
+async function renderAnnualTotalsSection(year) {
+    const list = document.getElementById('annual-totals-list');
+    if (!list) return;
+
+    try {
+        // Pedir actualización en background (opcional, para asegurar frescura)
+        // CortijoAPI.refreshAnnualTotals(year); // Se podría llamar al guardar cada gasto mejor
+
+        const data = await CortijoAPI.getAnnualTotals(year);
+        if (data.length === 0) {
+            list.innerHTML = '<p style="padding:1.5rem; text-align:center;">No hay totales calculados aún para este año.</p>';
+            return;
+        }
+
+        // Ordenar por Total Pagado DESC
+        data.sort((a,b) => b.totalPagado - a.totalPagado);
+
+        list.innerHTML = data.map(item => `
+            <div style="padding:1.2rem; border-bottom:1px solid var(--border); display:grid; grid-template-columns: 100px 1fr; align-items:center; gap:15px;">
+                <div style="font-weight:700; color:var(--text-main); font-size:1rem;">${item.persona}</div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px;">
+                    <div>
+                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Pagado</small>
+                        <strong style="color:var(--success); font-size:1.1rem;">${item.totalPagado.toFixed(2)}€</strong>
+                    </div>
+                    <div>
+                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Debería (Teórico)</small>
+                        <span style="font-weight:600;">${item.totalDeberia.toFixed(2)}€</span>
+                    </div>
+                    <div>
+                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Real (Operativo)</small>
+                        <span style="font-weight:600; color:var(--primary);">${item.totalOperativo.toFixed(2)}€</span> <small style="font-size:0.65rem;">(${item.pctOperativo})</small>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+    } catch(e) {
+        list.innerHTML = '<p style="padding:1rem; color:var(--danger);">Error al cargar el libro oficial.</p>';
     }
 }
 

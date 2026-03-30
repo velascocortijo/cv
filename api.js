@@ -1,9 +1,9 @@
-// VERSION: V1.1.7 - Base original restaurada con métodos de Angelita
+// VERSION: V1.4.0 - Soporte para Totales Anuales Centralizados
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxT1wXzm99FqEcmP606i2FsPCp0MSQ4_Flkm-InpQbs_PQETmnUC2RRxmDfsb50JxnL/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 const API = {
     // --- GASTOS ---
@@ -290,6 +290,22 @@ const API = {
 
     async calculateSettlement(year) {
         const response = await fetch(`${API_URL}?action=calculateSettlement&year=${year}`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    // --- TOTALES ANUALES ---
+    async getAnnualTotals(year) {
+        const response = await fetch(`${API_URL}?action=getAnnualTotals&year=${year}`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    async refreshAnnualTotals(year) {
+        const response = await fetch(API_URL + '?action=refreshAnnualTotals', {
+            method: 'POST',
+            body: JSON.stringify({ year }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit'
+        });
         return await response.json();
     }
 };

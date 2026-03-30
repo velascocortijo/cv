@@ -1,4 +1,4 @@
-<!-- VERSION: V1.1.7 - Base original restaurada con soporte para Angelita -->
+<!-- VERSION: V1.4.0 - Totales Anuales y Reparto Inteligente -->
 <!DOCTYPE html>
 <html lang="es">
 
@@ -92,18 +92,25 @@
 
                 <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
                     <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; color:var(--primary);">Deudas Simplificadas</h3>
-                    <div id="split-debts-container">
-                        <!-- Lista de quién debe a quién -->
+                    <div id="split-debts-container" class="card-grid">
+                        <!-- Se rellena con js -->
+                        <p style="text-align:center; padding:2rem; color:var(--text-muted);">Cargando deudas...</p>
                     </div>
                 </div>
             </div>
 
+            <!-- NUEVO BLOQUE: TOTALES ANUALES CENTRALIZADOS (V1.4.0) -->
+            <h3 style="margin-top:2rem; margin-bottom:1rem; border-left: 4px solid var(--secondary); padding-left:12px;">Detalle de Pagos Totales del Año</h3>
+            <div id="annual-totals-list" class="card" style="padding:0;">
+                <!-- Se rellena con js -->
+                <p style="text-align:center; padding:1.5rem; color:var(--text-muted);">Consultando libro oficial de cuentas...</p>
+            </div>
+
             <!-- EXCLUSIÓN ANGELITA: Contenedor y Botón Liquidación -->
-            <div style="margin-top:2rem; border-top: 2px dashed var(--border); padding-top:2rem;">
+            <div id="excluded-balances-container" style="margin-top:2rem;">
                 <h3 style="margin-bottom:1.5rem; color:var(--text-main);">Aportaciones Pendientes (Familiares Excluidos)</h3>
-                <div id="excluded-balances-container">
-                    <!-- Cards de familiares excluidos -->
-                </div>
+                <!-- Cards de familiares excluidos -->
+            </div>
                 <div style="margin-top:2rem; text-align:center;">
                     <button onclick="calculateFinalLiquidation()" class="btn-primary" style="padding:1rem 2rem; box-shadow:0 10px 15px -3px rgba(52,211,153,0.3);">
                         🚀 Ejecutar Liquidación Final del Año
