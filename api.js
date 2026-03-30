@@ -1,40 +1,14 @@
-// VERSION: V1.1.3 - Dashboard section restored
+// VERSION: V1.1.7 - Base original restaurada con métodos de Angelita
 /**
  * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
  */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyqU-xLl3xfP7EEL7Cg17OtRtnORDkTmA8D9XXuB-SVSkgHuUBQGvHE1AiS-J2n6Iuh/exec';
-
-// --- WRAPPER SEGURO DE PETICIONES ---
-const fetchAPI = async (url, options) => {
-    // Intentar obtener el usuario de la ventana o del almacenamiento local
-    const user = window.currentUser || JSON.parse(localStorage.getItem('user') || 'null');
-    
-    if (user && user.email) {
-        // Enviar siempre el email por URL (útil para auditoría en el servidor)
-        url += (url.includes('?') ? '&' : '?') + 'email=' + encodeURIComponent(user.email);
-        
-        // Si es un POST, inyectar también el user_id en el cuerpo del mensaje
-        if (options && options.method && options.method.toUpperCase() === 'POST' && typeof options.body === 'string') {
-            try {
-                let payload = JSON.parse(options.body);
-                payload.user_id = user.email; // Aseguramos que el servidor reciba quién firma la acción
-                options.body = JSON.stringify(payload);
-            } catch(e) { 
-                console.error("Error al inyectar user_id en el payload", e);
-            }
-        }
-    } else {
-        console.warn("Petición API realizada sin usuario identificado.");
-    }
-    
-    return fetch(url, options);
-};
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 const API = {
     // --- GASTOS ---
     async getExpenses(year) {
-        const response = await fetchAPI(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -44,7 +18,7 @@ const API = {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
         const payload = { ...expenseData, url_drive: urlDrive || expenseData.url_drive };
-        const response = await fetchAPI(API_URL + '?action=create', {
+        const response = await fetch(API_URL + '?action=create', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -55,7 +29,7 @@ const API = {
 
     async updateExpense(id, data) {
         const payload = { id, ...data };
-        const response = await fetchAPI(API_URL + '?action=update', {
+        const response = await fetch(API_URL + '?action=update', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -65,7 +39,7 @@ const API = {
     },
 
     async deleteExpense(id) {
-        const response = await fetchAPI(API_URL + '?action=delete', {
+        const response = await fetch(API_URL + '?action=delete', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -76,7 +50,7 @@ const API = {
 
     // --- INGRESOS ---
     async getIncome(year) {
-        const response = await fetchAPI(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -86,7 +60,7 @@ const API = {
             urlDrive = await this.uploadToDrive(fileBlob, folderName);
         }
         const payload = { ...incomeData, url_drive: urlDrive || incomeData.url_drive };
-        const response = await fetchAPI(API_URL + '?action=addIncome', {
+        const response = await fetch(API_URL + '?action=addIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -97,7 +71,7 @@ const API = {
 
     async updateIncome(id, data) {
         const payload = { id, ...data };
-        const response = await fetchAPI(API_URL + '?action=updateIncome', {
+        const response = await fetch(API_URL + '?action=updateIncome', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -107,7 +81,7 @@ const API = {
     },
 
     async deleteIncome(id) {
-        const response = await fetchAPI(API_URL + '?action=deleteIncome', {
+        const response = await fetch(API_URL + '?action=deleteIncome', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -118,7 +92,7 @@ const API = {
 
     // --- DOCUMENTOS ---
     async getDocuments(year) {
-        const response = await fetchAPI(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -133,7 +107,7 @@ const API = {
                     base64: base64,
                     fileName: file.name
                 };
-                const res = await fetchAPI(API_URL + '?action=uploadAndRecord', {
+                const res = await fetch(API_URL + '?action=uploadAndRecord', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -149,7 +123,7 @@ const API = {
     },
 
     async updateDocument(id, data) {
-        const response = await fetchAPI(API_URL + '?action=updateDocument', {
+        const response = await fetch(API_URL + '?action=updateDocument', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -159,7 +133,7 @@ const API = {
     },
 
     async deleteDocument(id) {
-        const response = await fetchAPI(API_URL + '?action=deleteDocument', {
+        const response = await fetch(API_URL + '?action=deleteDocument', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -170,12 +144,12 @@ const API = {
 
     // --- TAREAS (KANBAN) ---
     async getTasks(year) {
-        const response = await fetchAPI(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
     async addTask(taskData) {
-        const response = await fetchAPI(API_URL + '?action=addTask', {
+        const response = await fetch(API_URL + '?action=addTask', {
             method: 'POST',
             body: JSON.stringify(taskData),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -185,7 +159,7 @@ const API = {
     },
 
     async updateTask(id, data) {
-        const response = await fetchAPI(API_URL + '?action=updateTask', {
+        const response = await fetch(API_URL + '?action=updateTask', {
             method: 'POST',
             body: JSON.stringify({ id, ...data }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -195,7 +169,7 @@ const API = {
     },
 
     async deleteTask(id) {
-        const response = await fetchAPI(API_URL + '?action=deleteTask', {
+        const response = await fetch(API_URL + '?action=deleteTask', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -215,7 +189,7 @@ const API = {
                     fileName: file.name,
                     folderName: folderName
                 };
-                const res = await fetchAPI(API_URL + '?action=upload', {
+                const res = await fetch(API_URL + '?action=upload', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -231,18 +205,18 @@ const API = {
     },
 
     async getBalance(year) {
-        const response = await fetchAPI(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
 
     async checkEmail(email) {
-        const response = await fetchAPI(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
 
     // --- INVENTARIO ---
     async getInventory() {
-        const response = await fetchAPI(`${API_URL}?action=listInventory`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listInventory`, { credentials: 'omit' });
         return await response.json();
     },
 
@@ -252,7 +226,7 @@ const API = {
             urlDrive = await this.uploadToDrive(file, 'Inventario');
         }
         const payload = { ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetchAPI(API_URL + '?action=addInventory', {
+        const response = await fetch(API_URL + '?action=addInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -267,7 +241,7 @@ const API = {
             urlDrive = await this.uploadToDrive(file, 'Inventario');
         }
         const payload = { id, ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetchAPI(API_URL + '?action=updateInventory', {
+        const response = await fetch(API_URL + '?action=updateInventory', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -277,7 +251,7 @@ const API = {
     },
 
     async deleteInventory(id) {
-        const response = await fetchAPI(API_URL + '?action=deleteInventory', {
+        const response = await fetch(API_URL + '?action=deleteInventory', {
             method: 'POST',
             body: JSON.stringify({ id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -288,19 +262,19 @@ const API = {
 
     // --- COPIAS DE SEGURIDAD ---
     async triggerBackup(email) {
-        const response = await fetchAPI(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
 
     // --- AUDITORÍA ---
     async listAudit(email) {
-        const response = await fetchAPI(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
         return await response.json();
     },
 
-    // --- PENDIENTES FAMILIARES EXCLUIDOS ---
+    // --- PENDIENTES FAMILIARES EXCLUIDOS (AÑADIDO PARA ANGELITA) ---
     async savePendingBalance(payload) {
-        const response = await fetchAPI(API_URL + '?action=savePending', {
+        const response = await fetch(API_URL + '?action=savePending', {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -310,12 +284,12 @@ const API = {
     },
 
     async getPendingBalances() {
-        const response = await fetchAPI(`${API_URL}?action=listPending`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=listPending`, { credentials: 'omit' });
         return await response.json();
     },
 
     async calculateSettlement(year) {
-        const response = await fetchAPI(`${API_URL}?action=calculateSettlement&year=${year}`, { credentials: 'omit' });
+        const response = await fetch(`${API_URL}?action=calculateSettlement&year=${year}`, { credentials: 'omit' });
         return await response.json();
     }
 };
