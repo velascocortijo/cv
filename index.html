@@ -1,4 +1,4 @@
-<!-- VERSION: V1.4.0 - Totales Anuales y Reparto Inteligente -->
+<!-- VERSION: V1.4.8 - Manual de Bizums Integrado y Limpieza UI -->
 <!DOCTYPE html>
 <html lang="es">
 
@@ -208,7 +208,7 @@
             </div>
         </section>
 
-        <!-- Expenses Section -->
+        <!-- SECCIÓN DE GESTIÓN DE GASTOS -->
         <section id="expenses-section" class="content-section hidden">
             <div class="section-header">
                 <div class="header-with-filter">
@@ -224,6 +224,24 @@
                     </div>
                 </div>
                 <button class="btn-primary" onclick="openExpenseModal()">+ Añadir Gasto</button>
+            </div>
+
+            <!-- BIZUM HELP BOX (V1.4.8) -->
+            <div class="card" style="background:var(--bg-card); border-left:4px solid var(--secondary); margin-bottom:1.5rem; padding:1.2rem; border-top-right-radius:12px; border-bottom-right-radius:12px;">
+                <h4 style="margin-bottom:8px; display:flex; align-items:center; gap:8px; color:var(--text-main);">
+                    <span style="font-size:1.2rem;">💡</span> Cómo registrar un Bizum o Transferencia (Compensación)
+                </h4>
+                <div style="font-size:0.85rem; line-height:1.6; color:var(--text-muted);">
+                    <ul style="padding-left:1.2rem; list-style-type: disc;">
+                        <li><strong>Concepto:</strong> Pon algo claro como <code>BIZUM: De Antonio a Raquel</code></li>
+                        <li><strong>Importe:</strong> La cantidad exacta enviada.</li>
+                        <li><strong>Pagado por:</strong> Quién hizo el envío (ej: Antonio).</li>
+                        <li><strong>Participantes Activos (Clave):</strong> 
+                            <span style="color:var(--danger); font-weight:bold;">DESMARCA</span> a quien paga y 
+                            <span style="color:var(--success); font-weight:bold;">MARCA SOLO</span> a quien recibe el dinero.
+                        </li>
+                    </ul>
+                </div>
             </div>
 
             <div class="table-container">
