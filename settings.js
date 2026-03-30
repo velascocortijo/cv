@@ -1,10 +1,10 @@
-// VERSION: V1.1.1 - Icon updated to CV Logo
+// VERSION: V1.3.1 - 'Otros' eliminado y Error de Reparto arreglado
 // Configuración Global - Reemplaza con tus IDs reales
 const CONFIG = {
     GOOGLE_CLIENT_ID: "699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com",
     SPREADSHEET_ID: "1L67JCrwGVxGuGghFgoZxM_zIXs0WP6bW4vjsOInvxu0",
     DRIVE_FOLDER_ID: "1_kocEDazNFHg191c9obZNu58ivmXimqL",
-    FAMILY_MEMBERS: ["Antonio", "Angelita", "Rebeca", "Raquel", "Jorge", "Tete", "Otros"],
+    FAMILY_MEMBERS: ["Antonio", "Angelita", "Rebeca", "Raquel", "Jorge", "Tete"],
     INCOME_CATEGORIES: ["Alquiler", "Aportación Familiar", "Subvención", "Otros"],
     INVENTORY_CATEGORIES: [
         "Mobiliario interior", "Electrodomésticos", "Menaje de Cocina",
@@ -24,8 +24,7 @@ const CONFIG = {
         "Rebeca": 12.5,
         "Raquel": 12.5,
         "Jorge": 12.5,
-        "Tete": 12.5,
-        "Otros": 0
+        "Tete": 12.5
     },
     FAMILY_STATUS: {
         "Antonio": "activo",
@@ -33,8 +32,7 @@ const CONFIG = {
         "Rebeca": "activo",
         "Raquel": "activo",
         "Jorge": "activo",
-        "Tete": "activo",
-        "Otros": "activo"
+        "Tete": "activo"
     }
 };
 window.CONFIG = CONFIG;

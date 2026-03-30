@@ -1,4 +1,4 @@
-// VERSION: V1.3.0 - Motor de Reparto Modelo 7 Pasos Integrado
+// VERSION: V1.3.1 - Error de Reparto Arreglado y 'Otros' eliminado
 
 // App State
 let currentUser = null;
@@ -8,6 +8,26 @@ let currentTaskYear = new Date().getFullYear();
 let currentDocYear = new Date().getFullYear();
 let currentExpYear = new Date().getFullYear();
 let currentIncYear = new Date().getFullYear();
+
+// Algoritmo de optimización de deudas (Tricount)
+function generarReembolsos(balances) {
+    const b = JSON.parse(JSON.stringify(balances));
+    const result = [];
+    const names = Object.keys(b);
+    let creditors = names.filter(n => b[n] > 0.01).sort((x, y) => b[y] - b[x]);
+    let debtors = names.filter(n => b[n] < -0.01).sort((x, y) => b[x] - b[y]);
+    
+    let i = 0, j = 0;
+    while(i < debtors.length && j < creditors.length) {
+        let deb = debtors[i], cre = creditors[j];
+        let amount = Math.min(Math.abs(b[deb]), b[cre]);
+        if(amount > 0.01) result.push({ from: deb, to: cre, amount: amount });
+        b[deb] += amount; b[cre] -= amount;
+        if(Math.abs(b[deb]) < 0.01) i++;
+        if(Math.abs(b[cre]) < 0.01) j++;
+    }
+    return result;
+}
 
 let auditLog = [{ date: new Date().toLocaleString(), user: 'Sistema', action: 'Sesión iniciada' }];
 let cachedExpenses = [];
