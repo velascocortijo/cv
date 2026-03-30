@@ -1,4 +1,4 @@
-// VERSION: V1.1.7 - Base original restaurada con lógica de Angelita integrada
+// VERSION: V1.2.0 - Gestión Completa de Ingresos con subida a Drive integrada
 
 // App State
 let currentUser = null;
@@ -385,40 +385,208 @@ function openEditExpenseModal(id) {
 async function confirmDeleteExpense(id) { if (confirm("¿Eliminar?")) { await CortijoAPI.deleteExpense(id); renderExpenses(); } }
 
 // --- INCOME ---
-function changeIncYear(year) { currentIncYear = year; const el = document.getElementById('inc-year-display'); if(el) el.textContent = year; renderIncome(); }
+function changeIncYear(year) {
+    currentIncYear = year;
+    const el = document.getElementById('inc-year-display');
+    if (el) el.textContent = year;
+    renderIncome();
+}
 
 async function renderIncome() {
     const list = document.getElementById('income-body');
     if (!list) return;
-    list.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+    list.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">Cargando ingresos...</td></tr>';
     try {
         const data = await CortijoAPI.getIncome(currentIncYear);
         cachedIncome = data;
         filterIncome(document.getElementById('income-search')?.value || '');
-    } catch (e) { list.innerHTML = '<tr><td colspan="6">Error</td></tr>'; }
+    } catch (e) {
+        list.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--danger);">Error al cargar ingresos</td></tr>';
+    }
 }
 
 function filterIncome(query) {
     const list = document.getElementById('income-body');
-    const filtered = cachedIncome.filter(e => String(e.concepto).toLowerCase().includes(query.toLowerCase()));
+    const filtered = cachedIncome.filter(e =>
+        String(e.concepto).toLowerCase().includes(query.toLowerCase()) ||
+        String(e.categoria).toLowerCase().includes(query.toLowerCase()) ||
+        String(e.recibido_de).toLowerCase().includes(query.toLowerCase())
+    );
+    
     let total = 0;
-    list.innerHTML = filtered.map(e => {
-        total += parseFloat(e.importe);
-        return `<tr><td>${formatDateDisplay(e.fecha)}</td><td>${e.concepto}</td><td>${e.categoria}</td><td class="amount" style="color:var(--success);">+${parseFloat(e.importe).toFixed(2)}€</td><td>${e.recibido_de}</td><td><button class="btn-icon" onclick="confirmDeleteIncome(${e.id})">🗑️</button></td></tr>`;
-    }).join('');
-    const el = document.getElementById('total-income'); if(el) el.textContent = `${total.toFixed(2)} €`;
+    list.innerHTML = filtered.length === 0 ? 
+        '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No se encontraron ingresos</td></tr>' :
+        filtered.map(e => {
+            const importe = parseFloat(e.importe) || 0;
+            total += importe;
+            return `
+            <tr>
+                <td>${formatDateDisplay(e.fecha)}</td>
+                <td>
+                    <div style="font-weight:600;">${e.concepto}</div>
+                    ${e.notas ? `<div style="font-size:0.75rem; color:var(--text-muted);">${e.notas}</div>` : ''}
+                </td>
+                <td><span class="badge" style="background:var(--bg-main); font-size:0.7rem;">${e.categoria}</span></td>
+                <td class="amount" style="color:var(--success); font-weight:700;">+${importe.toFixed(2)}€</td>
+                <td>${e.recibido_de || '-'}</td>
+                <td>
+                    <div style="display:flex; gap:8px;">
+                        ${e.url_drive ? `<button class="btn-icon" onclick="window.open('${e.url_drive}', '_blank')" title="Ver Factura/Justificante">📄</button>` : ''}
+                        <button class="btn-icon" onclick="openEditIncomeModal(${e.id})" title="Editar">✏️</button>
+                        <button class="btn-icon" onclick="confirmDeleteIncome('${e.id}')" title="Borrar">🗑️</button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    
+    const el = document.getElementById('total-income');
+    if (el) el.textContent = `${total.toFixed(2)} €`;
 }
 
 function openIncomeModal() {
-    openModal('Añadir Ingreso', `<form id="in-form"><div class="form-group"><label>Concepto</label><input type="text" id="inc" required></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="ina" required></div><div class="form-group"><label>Origen</label><input type="text" id="inf"></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    openModal('Añadir Ingreso', `
+        <form id="in-form">
+            <div class="form-group">
+                <label>Concepto / Referencia</label>
+                <input type="text" id="inc-c" placeholder="Ej: Venta Aceituna Coop." required>
+            </div>
+            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Importe Bruto</label>
+                    <input type="number" step="0.01" id="inc-a" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha del Ingreso</label>
+                    <input type="date" id="inc-d" value="${new Date().toISOString().split('T')[0]}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <select id="inc-cat">
+                    ${CONFIG.INCOME_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Origen (Recibido de)</label>
+                <input type="text" id="inc-r" placeholder="Ej: Cooperativa Nuestra Sra. del Rosario">
+            </div>
+            <div class="form-group">
+                <label>Notas adicionales</label>
+                <textarea id="inc-n" placeholder="Detalles de la liquidación, kilos, etc."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Documento / Justificante (Opcional)</label>
+                <input type="file" id="inc-f" accept="image/*,.pdf">
+                <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Se subirá automáticamente a tu Google Drive.</p>
+            </div>
+            <button type="submit" id="inc-btn" class="btn-primary" style="width:100%; margin-top:10px;">💾 Guardar Ingreso</button>
+        </form>
+    `);
+
     document.getElementById('in-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.createIncome({ id: Date.now(), concepto: document.getElementById('inc').value, importe: document.getElementById('ina').value, recibido_de: document.getElementById('inf').value, fecha: new Date().toISOString(), year_selector: currentIncYear });
-        renderIncome(); closeModal();
+        const btn = document.getElementById('inc-btn');
+        btn.disabled = true;
+        btn.textContent = 'Subiendo a Drive...';
+
+        const data = {
+            id: Date.now(),
+            concepto: document.getElementById('inc-c').value,
+            importe: document.getElementById('inc-a').value,
+            fecha: document.getElementById('inc-d').value,
+            categoria: document.getElementById('inc-cat').value,
+            recibido_de: document.getElementById('inc-r').value,
+            notas: document.getElementById('inc-n').value,
+            year: currentIncYear
+        };
+
+        try {
+            await CortijoAPI.createIncome(data, document.getElementById('inc-f').files[0]);
+            renderIncome();
+            closeModal();
+        } catch (err) {
+            alert("Error al guardar: " + err);
+            btn.disabled = false;
+            btn.textContent = 'Guardar Ingreso';
+        }
     };
 }
 
-async function confirmDeleteIncome(id) { if(confirm("¿Eliminar?")) { await CortijoAPI.deleteIncome(id); renderIncome(); } }
+function openEditIncomeModal(id) {
+    const inc = cachedIncome.find(i => i.id == id);
+    if (!inc) return;
+
+    openModal('Editar Ingreso', `
+        <form id="ei-form">
+            <div class="form-group">
+                <label>Concepto</label>
+                <input type="text" id="eic-c" value="${inc.concepto || ''}" required>
+            </div>
+            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Importe</label>
+                    <input type="number" step="0.01" id="eic-a" value="${inc.importe || 0}" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="eic-cat">
+                        ${CONFIG.INCOME_CATEGORIES.map(c => `<option value="${c}" ${c === inc.categoria ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Recibido de</label>
+                <input type="text" id="eic-r" value="${inc.recibido_de || ''}">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">Actualizar Ingreso</button>
+        </form>
+    `);
+
+    document.getElementById('ei-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            concepto: document.getElementById('eic-c').value,
+            importe: document.getElementById('eic-a').value,
+            categoria: document.getElementById('eic-cat').value,
+            recibido_de: document.getElementById('eic-r').value
+        };
+        await CortijoAPI.updateIncome(id, data);
+        renderIncome();
+        closeModal();
+    };
+}
+
+async function confirmDeleteIncome(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar este ingreso? Esta acción no se puede deshacer.")) {
+        await CortijoAPI.deleteIncome(id);
+        renderIncome();
+    }
+}
+
+function exportIncome() {
+    if (cachedIncome.length === 0) return alert("No hay datos para exportar");
+    const headers = ["Fecha", "Concepto", "Categoría", "Importe", "Recibido de", "Notas"];
+    const rows = cachedIncome.map(i => [
+        formatDateDisplay(i.fecha),
+        i.concepto,
+        i.categoria,
+        i.importe,
+        i.recibido_de,
+        i.notas || ""
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," + 
+        headers.join(",") + "\n" + 
+        rows.map(e => e.join(",")).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Ingresos_${currentIncYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
 // --- INVENTORY ---
 async function loadInventoryData() { try { cachedInventory = await CortijoAPI.getInventory(); } catch(e){} }
