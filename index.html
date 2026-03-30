@@ -1,4 +1,4 @@
-<!-- VERSION: V1.1.2 - Social Icons & Undefined Fix added -->
+<!-- VERSION: V1.1.3 - Dashboard section restored -->
 <!DOCTYPE html>
 <html lang="es">
 
@@ -52,14 +52,14 @@
                 <button onclick="showLogin()" class="btn-login-trigger">Acceso Familiar</button>
             </nav>
             <nav id="private-nav" class="hidden">
-                <button onclick="showSection('calendar')">Calendario</button>
-                <button onclick="showSection('expenses')">Gastos</button>
-                <button onclick="showSection('income')">Ingresos</button>
-                <button onclick="showSection('split')">Reparto</button>
-                <button onclick="showSection('inventory')">Inventario</button>
-                <button onclick="showSection('tasks')">Tareas</button>
-                <button onclick="showSection('documents')">Documentos</button>
-                <button onclick="showSection('profile')">Perfil</button>
+                <button onclick="showSection('calendar')" class="nav-link" data-section="calendar">Calendario</button>
+                <button onclick="showSection('expenses')" class="nav-link" data-section="expenses">Gastos</button>
+                <button onclick="showSection('income')" class="nav-link" data-section="income">Ingresos</button>
+                <button onclick="showSection('split')" class="nav-link" data-section="split">Reparto</button>
+                <button onclick="showSection('inventory')" class="nav-link" data-section="inventory">Inventario</button>
+                <button onclick="showSection('tasks')" class="nav-link" data-section="tasks">Tareas</button>
+                <button onclick="showSection('documents')" class="nav-link" data-section="documents">Documentos</button>
+                <button onclick="showSection('profile')" class="nav-link" data-section="profile">Perfil</button>
                 <button onclick="signOut()" class="btn-logout-small"><i data-lucide="log-out"></i></button>
             </nav>
             <div id="auth-container" class="hidden">
@@ -78,6 +78,27 @@
     </header>
 
     <main class="container">
+        <!-- SECCIÓN DASHBOARD (Añadida para corregir pantalla blanca) -->
+        <section id="dashboard-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Resumen General</h2>
+            </div>
+            <div class="balance-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:30px;">
+                <div class="card" style="padding:1.5rem; background:var(--bg-card); border-radius:16px; border-left:5px solid var(--danger);">
+                    <small style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Gastos Anuales</small>
+                    <h3 id="total-expenses-card" style="font-size:2rem; margin-top:5px; color:var(--danger);">0.00 €</h3>
+                </div>
+                <div class="card" style="padding:1.5rem; background:var(--bg-card); border-radius:16px; border-left:5px solid var(--success);">
+                    <small style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Ingresos Totales</small>
+                    <h3 id="total-income-card" style="font-size:2rem; margin-top:5px; color:var(--success);">0.00 €</h3>
+                </div>
+                <div class="card" style="padding:1.5rem; background:var(--bg-card); border-radius:16px; border-left:5px solid var(--primary);">
+                    <small style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Beneficio Propiedad</small>
+                    <h3 id="balance-neto-card" style="font-size:2rem; margin-top:5px; color:var(--primary);">0.00 €</h3>
+                </div>
+            </div>
+        </section>
+
         <!-- SECCIÓN DE REPARTO DE GASTOS -->
         <section id="split-section" class="content-section hidden">
             <div class="section-header">
