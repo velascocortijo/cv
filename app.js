@@ -1,4 +1,4 @@
-// VERSION: V1.4.0 - Totales Anuales Centralizados y Reparto Inteligente
+// VERSION: V2.0.0 - Motor de Zona Personal (Aportado vs Gastado)
 
 // App State
 let currentUser = null;
@@ -359,45 +359,69 @@ async function renderExpenseSplit() {
     }
 }
 
-async function renderAnnualTotalsSection(year) {
-    const list = document.getElementById('annual-totals-list');
-    if (!list) return;
+/**
+ * RENDER: ZONA PERSONAL (V2.0.0)
+ * Modelo: Aportado (Ingresos) - Consumo Equitativo (Gastos)
+ */
+async function renderPersonalZone(year) {
+    const grid = document.getElementById('personal-zone-grid');
+    if (!grid) return;
 
     try {
-        // Pedir actualización en background (opcional, para asegurar frescura)
-        // CortijoAPI.refreshAnnualTotals(year); // Se podría llamar al guardar cada gasto mejor
+        const data = await CortijoAPI.getMemberStatus(year);
+        const yearDisplay = document.getElementById('personal-year-display');
+        if (yearDisplay) yearDisplay.innerText = year;
 
-        const data = await CortijoAPI.getAnnualTotals(year);
         if (data.length === 0) {
-            list.innerHTML = '<p style="padding:1.5rem; text-align:center;">No hay totales calculados aún para este año.</p>';
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:3rem;">No hay datos de deudas para este año.</p>';
             return;
         }
 
-        // Ordenar por Total Pagado DESC
-        data.sort((a,b) => b.totalPagado - a.totalPagado);
+        grid.innerHTML = data.map(item => {
+            const saldo = parseFloat(item.saldo) || 0;
+            const isPositive = saldo > 0.01;
+            const isNegative = saldo < -0.01;
+            
+            let statusClass = 'neutral';
+            let statusText = 'Equilibrado';
+            if (isPositive) { statusClass = 'positive'; statusText = 'Crédito'; }
+            if (isNegative) { statusClass = 'negative'; statusText = 'Deuda'; }
 
-        list.innerHTML = data.map(item => `
-            <div style="padding:1.2rem; border-bottom:1px solid var(--border); display:grid; grid-template-columns: 100px 1fr; align-items:center; gap:15px;">
-                <div style="font-weight:700; color:var(--text-main); font-size:1rem;">${item.persona}</div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px;">
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Pagado</small>
-                        <strong style="color:var(--success); font-size:1.1rem;">${item.totalPagado.toFixed(2)}€</strong>
+            const initial = item.persona.charAt(0).toUpperCase();
+
+            return `
+                <div class="personal-card ${statusClass}">
+                    <div class="card-header-v2">
+                        <div class="avatar-v2">${initial}</div>
+                        <div class="member-info-v2">
+                            <h4>${item.persona}</h4>
+                            <span class="status-indicator">${statusText}</span>
+                        </div>
                     </div>
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Debería (Teórico)</small>
-                        <span style="font-weight:600;">${item.totalDeberia.toFixed(2)}€</span>
-                    </div>
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Real (Operativo)</small>
-                        <span style="font-weight:600; color:var(--primary);">${item.totalOperativo.toFixed(2)}€</span> <small style="font-size:0.65rem;">(${item.pctOperativo})</small>
+
+                    <div class="card-body-v2">
+                        <div class="data-row">
+                            <span class="label">Ingresos (Puso)</span>
+                            <span class="value">${item.ingresos.toFixed(2)} €</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="label">Gastos (Parte)</span>
+                            <span class="value">${item.gastos.toFixed(2)} €</span>
+                        </div>
+                        <div class="saldo-hero">
+                            <small>Saldo Neto</small>
+                            <h3>${isPositive?'+':''}${saldo.toFixed(2)} €</h3>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
-    } catch(e) {
-        list.innerHTML = '<p style="padding:1rem; color:var(--danger);">Error al cargar el libro oficial.</p>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    } catch (e) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; color:var(--danger); text-align:center;">Error al cargar zona personal.</p>';
+        console.error(e);
     }
 }
 

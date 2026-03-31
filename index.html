@@ -99,11 +99,17 @@
                 </div>
             </div>
 
-            <!-- NUEVO BLOQUE: TOTALES ANUALES CENTRALIZADOS (V1.4.0) -->
-            <h3 style="margin-top:2rem; margin-bottom:1rem; border-left: 4px solid var(--secondary); padding-left:12px;">Detalle de Pagos Totales del Año</h3>
-            <div id="annual-totals-list" class="card" style="padding:0;">
-                <!-- Se rellena con js -->
-                <p style="text-align:center; padding:1.5rem; color:var(--text-muted);">Consultando libro oficial de cuentas...</p>
+            <!-- SECCIÓN: ZONA PERSONAL (V2.0.0) -->
+            <div class="section-header" style="margin-top:2rem;">
+                <h3 style="display:flex; align-items:center; gap:10px;">
+                    <i data-lucide="award" style="color:var(--accent);"></i> 
+                    Balances Individuales (<span id="personal-year-display">2026</span>)
+                </h3>
+            </div>
+            
+            <div id="personal-zone-grid" class="personal-grid">
+                <!-- Se rellena dinámicamente con app.js -->
+                <p style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Calculando balances finales...</p>
             </div>
 
             <!-- EXCLUSIÓN ANGELITA: Contenedor y Botón Liquidación -->
