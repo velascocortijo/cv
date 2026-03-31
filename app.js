@@ -1,4 +1,4 @@
-// VERSION: V2.0.0 - Motor de Zona Personal (Aportado vs Gastado)
+// VERSION: V2.0.4 - Sincronización Total e Interfaz Esmeralda
 
 // App State
 let currentUser = null;
@@ -529,19 +529,6 @@ function filterIncome(query) {
             total += importe;
             return `
             <tr>
-                <td>${formatDateDisplay(e.fecha)}</td>
-                <td>
-                    <div style="font-weight:600;">${e.concepto}</div>
-                    ${e.notas ? `<div style="font-size:0.75rem; color:var(--text-muted);">${e.notas}</div>` : ''}
-                </td>
-                <td><span class="badge" style="background:var(--bg-main); font-size:0.7rem;">${e.categoria}</span></td>
-                <td class="amount" style="color:var(--success); font-weight:700;">+${importe.toFixed(2)}€</td>
-                <td>${e.recibido_de || '-'}</td>
-                <td>
-                    <div style="display:flex; gap:8px;">
-                        ${e.url_drive ? `<button class="btn-icon" onclick="window.open('${e.url_drive}', '_blank')" title="Ver Factura/Justificante">📄</button>` : ''}
-                        <button class="btn-icon" onclick="openEditIncomeModal(${e.id})" title="Editar">✏️</button>
-                        <button class="btn-icon" onclick="confirmDeleteIncome('${e.id}')" title="Borrar">🗑️</button>
                     </div>
                 </td>
             </tr>`;

@@ -1311,4 +1311,14 @@ footer {
 .personal-card.negative .status-indicator { color: var(--danger); }
 .personal-card.negative .saldo-hero h3 { color: var(--danger); }
 .personal-card.neutral .status-indicator { color: var(--text-muted); }
-
+
+/* Categoría Ingresos (V2.0.4) */
+.badge-category-income {
+    background: rgba(16, 185, 129, 0.12);
+    color: #065f46;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
