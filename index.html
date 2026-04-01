@@ -1,155 +1,179 @@
-<!-- VERSION: V2.0.8 - Restauración de Lujo / Motor Blindado -->
+<!-- VERSION: V2.0.9 - Reparto Inteligente y Sistema Completo Restaurado -->
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortijo Velasco | ERP Familiar Premium</title>
+    <title>Cortijo Velasco - Gestión Familiar</title>
+    <link rel="icon" type="image/png" href="icono_cortijo.png">
     <link rel="stylesheet" href="style.css">
-    <!-- Iconos Lucide -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
-    <!-- LOGIN SCREEN PREMIUM -->
-    <div id="login-screen" class="login-wrapper">
-        <div class="login-card glass">
-            <div class="login-header">
-                <div class="logo-circle">CV</div>
-                <h1>Cortijo Velasco</h1>
-                <p>Gestión Familiar Inteligente</p>
+    <div id="loader" class="loader-overlay">
+        <div class="loader"></div>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="logo" style="display: flex; align-items: center; gap: 12px;">
+                <img src="logo_cv.jpg" alt="Cortijo Velasco Logo" class="main-logo-img" style="height: 50px; width: auto; object-fit: contain; mix-blend-mode: multiply;">
+                <span class="logo-text">Cortijo <span class="accent">Velasco</span></span>
             </div>
-            <div class="login-body">
-                <div class="input-group">
-                    <label for="login-email">Correo Electrónico</label>
-                    <input type="email" id="login-email" placeholder="ejemplo@correo.com" required>
-                </div>
-                <button class="btn-primary-glow" onclick="login()">
-                    Acceder al Cortijo <i data-lucide="arrow-right"></i>
-                </button>
+            <button id="mobile-menu-btn" class="btn-icon mobile-only hidden" onclick="toggleMobileMenu()">
+                <i data-lucide="menu"></i>
+            </button>
+            <nav id="public-nav">
+                <button onclick="showSection('home')">Inicio</button>
+                <button onclick="showSection('history')">Historia</button>
+                <button onclick="window.open('https://www.escapadarural.com/casa-rural/cordoba/cortijo-velasco', '_blank')">Reservas</button>
+                <button onclick="showSection('contact')">Contacto</button>
+                <button onclick="showLogin()" class="btn-login-trigger">Acceso Familiar</button>
+            </nav>
+            <nav id="private-nav" class="hidden">
+                <button onclick="showSection('calendar')" class="nav-link">Calendario</button>
+                <button onclick="showSection('expenses')" class="nav-link">Gastos</button>
+                <button onclick="showSection('income')" class="nav-link">Ingresos</button>
+                <button onclick="showSection('split')" class="nav-link">Cuentas</button>
+                <button onclick="showSection('inventory')" class="nav-link">Inventario</button>
+                <button onclick="showSection('tasks')" class="nav-link">Tareas</button>
+                <button onclick="showSection('documents')" class="nav-link">Documentos</button>
+                <button onclick="showSection('profile')" class="nav-link">Perfil</button>
+                <button onclick="signOut()" class="btn-logout-small"><i data-lucide="log-out"></i></button>
+            </nav>
+            <div id="auth-container" class="hidden">
+                <div id="g_id_onload" data-client_id="699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+                <div class="g_id_signin" data-type="standard"></div>
+                <button class="btn-close-auth" onclick="hideLogin()">×</button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- APP SCREEN -->
-    <div id="app-screen" style="display:none;" class="dashboard-layout">
-        <nav class="sidebar glass">
-            <div class="sidebar-brand">
-                <div class="avatar-cv">CV</div>
-                <span>CORTIJO</span>
+    <main class="container">
+        <!-- SECCIÓN DE REPARTO DE GASTOS (ZONA PERSONAL V2.0.9) -->
+        <section id="split-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Cuentas Familiares</h2>
+                <div class="header-tools">
+                    <select id="split-year-select" onchange="renderPersonalZone(this.value)">
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                    </select>
+                </div>
             </div>
-            <ul class="nav-links">
-                <li onclick="showSection('expenses-section')" class="active" id="nav-exp">
-                    <i data-lucide="receipt"></i> <span>Facturas Gastos</span>
-                </li>
-                <li onclick="showSection('income-section')" id="nav-inc">
-                    <i data-lucide="wallet"></i> <span>Ingresos Hucha</span>
-                </li>
-                <li onclick="showSection('balance-section')" id="nav-bal">
-                    <i data-lucide="bar-chart-3"></i> <span>Cuentas Familiares</span>
-                </li>
-                <li class="nav-divider"></li>
-                <li onclick="showSection('documents-section')">
-                    <i data-lucide="files"></i> <span>Documentos</span>
-                </li>
-                <li onclick="showSection('calendar-section')">
-                    <i data-lucide="calendar"></i> <span>Calendario</span>
-                </li>
-            </ul>
-        </nav>
+            
+            <div id="personal-zone-grid" class="personal-grid">
+                <!-- Se rellena dinámicamente con app.js -->
+                <p style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Sincronizando balances finales...</p>
+            </div>
 
-        <main class="main-content">
-            <!-- SECCIÓN: FACTURAS GASTOS -->
-            <section id="expenses-section" class="content-section">
-                <header class="section-header">
-                    <div class="header-titles">
-                        <h2>Gestión de Gastos <span class="year-badge" id="exp-year-display">2026</span></h2>
-                        <p>Control de todas las compras y facturas del Cortijo.</p>
-                    </div>
-                    <div class="header-actions">
-                        <div class="total-status glass">
-                            <small>GASTO TOTAL</small>
-                            <span id="total-balance">0.00 €</span>
-                        </div>
-                        <button class="btn-add" onclick="openExpenseModal()">
-                            <i data-lucide="plus"></i> Nuevo Gasto
-                        </button>
-                    </div>
-                </header>
+            <!-- DETALLE DE PAGOS TOTALES -->
+            <h3 style="margin-top:2rem; margin-bottom:1rem; border-left: 4px solid var(--secondary); padding-left:12px;">Libro de Pagos Anual</h3>
+            <div id="annual-totals-list" class="card" style="padding:0; overflow:hidden;"></div>
+        </section>
 
-                <div class="table-container glass">
-                    <table class="premium-table">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Concepto y Detalle</th>
-                                <th>Categoría</th>
-                                <th>Importe</th>
-                                <th>Pagado por</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="expense-list"></tbody>
-                    </table>
+        <!-- SECCIÓN: GASTOS -->
+        <section id="expenses-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Libro de Gastos</h2>
+                <div class="header-actions">
+                    <span id="total-balance" class="badge-total">0.00 €</span>
+                    <button class="btn-primary" onclick="openExpenseModal()">+ Nuevo Gasto</button>
                 </div>
-            </section>
+            </div>
+            <div class="table-container card">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Subtotal</th>
+                            <th>Pagado por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expense-list"></tbody>
+                </table>
+            </div>
+        </section>
 
-            <!-- SECCIÓN: INGRESOS HUCHA -->
-            <section id="income-section" class="content-section" style="display:none;">
-                <header class="section-header">
-                    <div class="header-titles">
-                        <h2>Ingresos Familiares</h2>
-                        <p>Aportaciones de los hermanos para la hucha común.</p>
+        <!-- SECCIÓN: INGRESOS -->
+        <section id="income-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Ingresos y Hucha</h2>
+                <button class="btn-success" onclick="openIncomeModal()">+ Nueva Aportación</button>
+            </div>
+            <div class="table-container card">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Categoría</th>
+                            <th>Importe</th>
+                            <th>Aportado por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="income-list"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECCIONES PÚBLICAS -->
+        <section id="home-section" class="content-section">
+            <div class="hero">
+                <div class="hero-overlay">
+                    <h1>Bienvenidos al <span class="accent">Cortijo Velasco</span></h1>
+                    <p>Un refugio de paz donde la historia familiar y el descanso se encuentran.</p>
+                    <div class="hero-actions">
+                        <button class="btn-primary" onclick="showSection('history')">Nuestra Historia</button>
+                        <button class="btn-primary" onclick="window.open('https://www.escapadarural.com/casa-rural/cordoba/cortijo-velasco', '_blank')">Reservar</button>
                     </div>
-                    <button class="btn-success-glow" onclick="openIncomeModal()">
-                        <i data-lucide="plus-circle"></i> Nueva Aportación
-                    </button>
-                </header>
-
-                <div class="info-alert glass-green">
-                    <i data-lucide="info"></i>
-                    <p><strong>Recuerda</strong>: Las aportaciones que registres aquí se restarán de tu deuda anual automáticamente.</p>
                 </div>
+            </div>
+        </section>
 
-                <div class="table-container glass">
-                    <table class="premium-table">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Concepto</th>
-                                <th>Tipo</th>
-                                <th>Importe</th>
-                                <th>Aportado por</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="income-list"></tbody>
-                    </table>
-                </div>
-            </section>
+        <!-- OTRAS SECCIONES (Calendario, Tareas, etc.) mantendrán sus IDs anteriores -->
+        <section id="calendar-section" class="content-section hidden">
+            <div class="section-header"><h2>Calendario de Ocupación</h2></div>
+            <div id="calendar-grid" class="card"></div>
+        </section>
 
-            <!-- SECCIÓN: CUENTAS FAMILIARES -->
-            <section id="balance-section" class="content-section" style="display:none;">
-                <header class="section-header">
-                    <div class="header-titles">
-                        <h2>Zona Personal <span class="year-badge">Balance 2026</span></h2>
-                        <p>Resumen detallado de pagos y cuotas por cada miembro.</p>
-                    </div>
-                    <div class="filter-group glass">
-                        <button class="btn-filter" onclick="changeYear(2025)">2025</button>
-                        <button class="btn-filter active">2026</button>
-                    </div>
-                </header>
+        <section id="inventory-section" class="content-section hidden">
+            <div class="section-header"><h2>Inventario</h2></div>
+            <div id="inventory-body" class="card"></div>
+        </section>
 
-                <div id="personal-zone-grid" class="personal-grid">
-                    <!-- Se carga dinámicamente -->
-                </div>
-            </section>
-        </main>
-    </div>
+        <section id="tasks-section" class="content-section hidden">
+            <div class="section-header"><h2>Tablón de Tareas</h2></div>
+            <div class="kanban-board" id="tasks-board"></div>
+        </section>
+        
+        <section id="documents-section" class="content-section hidden">
+            <div class="section-header"><h2>Expedientes y Documentos</h2></div>
+            <div id="document-list" class="document-grid"></div>
+        </section>
 
-    <!-- MODALES, SCRIPTS Y MÁS -->
+        <section id="profile-section" class="content-section hidden">
+            <div class="section-header"><h2>Perfil de Miembro</h2></div>
+            <div id="profile-card" class="card"></div>
+        </section>
+
+    </main>
+
+    <footer><p>&copy; 2026 Cortijo Velasco. Gestión Privada Familiar.</p></footer>
+
+    <!-- INICIALIZACIÓN DE ICONOS -->
+    <script>lucide.createIcons();</script>
     <script src="api.js"></script>
     <script src="app.js"></script>
-    <script>lucide.createIcons();</script>
 </body>
 </html>
