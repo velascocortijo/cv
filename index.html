@@ -67,56 +67,19 @@
     </header>
 
     <main class="container">
-        <!-- SECCIÓN DE REPARTO DE GASTOS -->
+        <!-- ZONA PERSONAL (MOTOR V3) -->
         <section id="split-section" class="content-section hidden">
             <div class="section-header">
-                <h2>Reparto de Gastos</h2>
+                <h2>Zona Personal</h2>
                 <div class="calendar-nav header-with-filter">
-                    <select id="split-year-select" onchange="renderExpenseSplit()">
+                    <select id="split-year-select" onchange="renderPersonalZone(this.value)">
                         <!-- Años se llenan dinámicamente -->
                     </select>
                 </div>
             </div>
             
-            <div id="split-summary-box" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,0.05); text-align:center;">
-                <!-- Total Gastos y Porcentajes resumen -->
-            </div>
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px;">
-                <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
-                    <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Resumen por Persona</h3>
-                    <div id="split-balances-container">
-                        <!-- Tabla o lista de saldos por persona -->
-                    </div>
-                </div>
-
-                <div class="card" style="background:var(--bg-card); padding:1.5rem; border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
-                    <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; color:var(--primary);">Deudas Simplificadas</h3>
-                    <div id="split-debts-container" class="card-grid">
-                        <!-- Se rellena con js -->
-                        <p style="text-align:center; padding:2rem; color:var(--text-muted);">Cargando deudas...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NUEVO BLOQUE: TOTALES ANUALES CENTRALIZADOS (V1.4.0) -->
-            <h3 style="margin-top:2rem; margin-bottom:1rem; border-left: 4px solid var(--secondary); padding-left:12px;">Detalle de Pagos Totales del Año</h3>
-            <div id="annual-totals-list" class="card" style="padding:0;">
-                <!-- Se rellena con js -->
-                <p style="text-align:center; padding:1.5rem; color:var(--text-muted);">Consultando libro oficial de cuentas...</p>
-            </div>
-
-            <!-- EXCLUSIÓN ANGELITA: Contenedor y Botón Liquidación -->
-            <div id="excluded-balances-container" style="margin-top:2rem;">
-                <h3 style="margin-bottom:1.5rem; color:var(--text-main);">Aportaciones Pendientes (Familiares Excluidos)</h3>
-                <!-- Cards de familiares excluidos -->
-            </div>
-                <div style="margin-top:2rem; text-align:center;">
-                    <button onclick="calculateFinalLiquidation()" class="btn-primary" style="padding:1rem 2rem; box-shadow:0 10px 15px -3px rgba(52,211,153,0.3);">
-                        🚀 Ejecutar Liquidación Final del Año
-                    </button>
-                    <div id="final-liquidation-result" class="hidden" style="margin-top:20px;"></div>
-                </div>
+            <div id="personal-zone-container" class="personal-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-top:20px;">
+                <!-- JavaScript inyectará las tarjetas aquí -->
             </div>
         </section>
 

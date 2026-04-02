@@ -9,25 +9,7 @@ let currentDocYear = new Date().getFullYear();
 let currentExpYear = new Date().getFullYear();
 let currentIncYear = new Date().getFullYear();
 
-// Algoritmo de optimización de deudas (Tricount)
-function generarReembolsos(balances) {
-    const b = JSON.parse(JSON.stringify(balances));
-    const result = [];
-    const names = Object.keys(b);
-    let creditors = names.filter(n => b[n] > 0.01).sort((x, y) => b[y] - b[x]);
-    let debtors = names.filter(n => b[n] < -0.01).sort((x, y) => b[x] - b[y]);
-    
-    let i = 0, j = 0;
-    while(i < debtors.length && j < creditors.length) {
-        let deb = debtors[i], cre = creditors[j];
-        let amount = Math.min(Math.abs(b[deb]), b[cre]);
-        if(amount > 0.01) result.push({ from: deb, to: cre, amount: amount });
-        b[deb] += amount; b[cre] -= amount;
-        if(Math.abs(b[deb]) < 0.01) i++;
-        if(Math.abs(b[cre]) < 0.01) j++;
-    }
-    return result;
-}
+// Algoritmos delegados completamente al backend (V3)
 
 let auditLog = [{ date: new Date().toLocaleString(), user: 'Sistema', action: 'Sesión iniciada' }];
 let cachedExpenses = [];
@@ -36,6 +18,7 @@ let cachedInventory = [];
 let cachedInvCategories = [];
 let cachedLocations = [];
 let cachedTasks = [];
+let cachedMembers = []; // Precargado desde Google Sheets
 let bookings = [
     { id: 1, start: '2026-01-15', end: '2026-01-18', user: 'Juan', title: 'Fin de semana' },
     { id: 2, start: '2026-01-24', end: '2026-01-26', user: 'Admin', title: 'Mantenimiento' }
@@ -134,7 +117,7 @@ function showSection(sectionId) {
     if (sectionId === 'tasks') renderTasks();
     if (sectionId === 'documents') renderDocuments();
     if (sectionId === 'profile') renderProfile();
-    if (sectionId === 'split') renderExpenseSplit();
+    if (sectionId === 'split') renderPersonalZone(currentYear);
 }
 
 function showLogin() {
@@ -246,164 +229,66 @@ async function filterExpenses(query) {
     if (balEl) balEl.textContent = `${total.toFixed(2)} €`;
 }
 
-// --- CÁLCULO DE REPARTO: MODELO 7 PASOS ---
-function procesarGastoModelo7Pasos(totalGasto, pagadorReal, participantesActivos) {
-    const pctTeoricos = CONFIG.EXPENSE_PERCENTAGES;
-    const PORCENTAJE_ANGELITA = 25.0;
+// --- ZONA PERSONAL (NUEVO MOTOR V3) ---
+async function renderPersonalZone(year) {
+    const container = document.getElementById('personal-zone-container');
+    if (!container) return;
 
-    // Pasos 1 y 2: Renormalizar porcentajes entre activos al 100%
-    const sumaPctsActivos = participantesActivos.reduce((sum, p) => sum + (pctTeoricos[p] || 0), 0);
-    const splitMap = {};
-    participantesActivos.forEach(p => {
-        splitMap[p] = ((pctTeoricos[p] || 0) / sumaPctsActivos);
-    });
-
-    // Pasos 3, 4 y 5: Deuda y Saldos operativa
-    const balancesItem = {};
-    participantesActivos.forEach(p => {
-        const cuota = totalGasto * splitMap[p];
-        const aportado = (p === pagadorReal) ? totalGasto : 0;
-        balancesItem[p] = aportado - cuota;
-    });
-
-    // Paso 6: Deuda real de Angelita (25% sobre bruto)
-    const deudaAngelita = (totalGasto * PORCENTAJE_ANGELITA) / 100;
-
-    return { balancesItem, deudaAngelita };
-}
-
-async function renderExpenseSplit() {
-    const section = document.getElementById('split-section');
-    if (!section || section.classList.contains('hidden')) return;
-
-    const listBalances = document.getElementById('split-balances-container');
-    const listDebts = document.getElementById('split-debts-container');
-    const listExcluded = document.getElementById('excluded-balances-container');
-    
-    if (!listBalances || !listDebts) return;
-
-    listBalances.innerHTML = '<p style="padding:1rem;">Calculando reparto modelo 7 pasos...</p>';
+    container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">Sincronizando balances con el motor central...</p>';
 
     try {
-        const expenses = await CortijoAPI.getExpenses(currentExpYear);
-        const activeMembers = CONFIG.FAMILY_MEMBERS.filter(m => CONFIG.FAMILY_STATUS[m] === 'activo');
+        const balances = await CortijoAPI.getBalances(year);
         
-        const finalBalances = {};
-        activeMembers.forEach(m => finalBalances[m] = 0);
-        let accumulatedAngelita = 0;
-        let gastoTotalBruto = 0;
-
-        expenses.forEach(exp => {
-            const total = parseFloat(exp.cantidad) || 0;
-            gastoTotalBruto += total;
-
-            // Paso 1: Identificar participantes activos del gasto
-            let participants = [];
-            try {
-                // Intentar leer de la DB o usar a todos los activos por defecto
-                participants = exp.participantes_activos ? JSON.parse(exp.participantes_activos) : activeMembers;
-            } catch(e) { participants = activeMembers; }
-            
-            // Si el pagador no está en la lista de participantes (ej: paga otros), le incluimos para que recupere su dinero
-            const pagador = exp.pagado_por;
-            const todosEnCalculo = Array.from(new Set([...participants, pagador])).filter(p => activeMembers.includes(p));
-
-            const result = procesarGastoModelo7Pasos(total, pagador, todosEnCalculo);
-            
-            // Acumular saldos de hermanos
-            Object.keys(result.balancesItem).forEach(p => {
-                if (finalBalances[p] !== undefined) finalBalances[p] += result.balancesItem[p];
-            });
-
-            // Acumular deuda virtual de Angelita
-            accumulatedAngelita += result.deudaAngelita;
-        });
-
-        // Renderizar Resumen Superior
-        const summaryBox = document.getElementById('split-summary-box');
-        if (summaryBox) {
-            summaryBox.innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div><small>Gasto Total Bruto</small><h2 style="color:var(--text-main);">${gastoTotalBruto.toFixed(2)}€</h2></div>
-                    <div><small>Reserva Angelita (25%)</small><h2 style="color:var(--primary);">${accumulatedAngelita.toFixed(2)}€</h2></div>
-                </div>
-            `;
-        }
-
-        // Renderizar Tabla de Saldos
-        listBalances.innerHTML = activeMembers.map(m => {
-            const bal = finalBalances[m];
-            const color = bal >= 0 ? 'var(--success)' : 'var(--danger)';
-            return `
-                <div style="display:flex; justify-content:space-between; padding:0.8rem; border-bottom:1px solid var(--border);">
-                    <span>${m}</span>
-                    <strong style="color:${color};">${bal.toFixed(2)} €</strong>
-                </div>`;
-        }).join('');
-
-        // Generar Deudas Simplificadas (Tricount)
-        const payments = generarReembolsos(finalBalances);
-        listDebts.innerHTML = payments.length === 0 ? 
-            '<p style="text-align:center; padding:1.5rem; color:var(--text-muted);">✅ Cuentas al día</p>' :
-            payments.map(p => `
-                <div style="background:var(--bg-main); padding:1rem; border-radius:8px; margin-bottom:10px; border-left:4px solid var(--primary);">
-                    <strong>${p.from}</strong> debe pagar a <strong>${p.to}</strong> <span style="float:right;">${p.amount.toFixed(2)}€</span>
-                </div>`).join('');
-
-        // --- NUEVA SECCIÓN: TOTALES ANUALES (V1.4.0) ---
-        renderAnnualTotalsSection(currentExpYear);
-
-    } catch (e) {
-        listBalances.innerHTML = '<p>Error al procesar el reparto</p>';
-        console.error(e);
-    }
-}
-
-async function renderAnnualTotalsSection(year) {
-    const list = document.getElementById('annual-totals-list');
-    if (!list) return;
-
-    try {
-        // Pedir actualización en background (opcional, para asegurar frescura)
-        // CortijoAPI.refreshAnnualTotals(year); // Se podría llamar al guardar cada gasto mejor
-
-        const data = await CortijoAPI.getAnnualTotals(year);
-        if (data.length === 0) {
-            list.innerHTML = '<p style="padding:1.5rem; text-align:center;">No hay totales calculados aún para este año.</p>';
+        if (balances.length === 0) {
+            container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No se encontraron operaciones para este año.</p>';
             return;
         }
 
-        // Ordenar por Total Pagado DESC
-        data.sort((a,b) => b.totalPagado - a.totalPagado);
+        container.innerHTML = balances.map(b => {
+            const isPositive = b.saldo > 0;
+            const isNegative = b.saldo < 0;
+            const colorClass = isPositive ? 'var(--success)' : (isNegative ? 'var(--danger)' : 'var(--text-muted)');
+            const bgBadge = isPositive ? 'rgba(52, 211, 153, 0.1)' : (isNegative ? 'rgba(239, 68, 68, 0.1)' : 'rgba(156, 163, 175, 0.1)');
 
-        list.innerHTML = data.map(item => `
-            <div style="padding:1.2rem; border-bottom:1px solid var(--border); display:grid; grid-template-columns: 100px 1fr; align-items:center; gap:15px;">
-                <div style="font-weight:700; color:var(--text-main); font-size:1rem;">${item.persona}</div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:10px;">
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Pagado</small>
-                        <strong style="color:var(--success); font-size:1.1rem;">${item.totalPagado.toFixed(2)}€</strong>
+            return `
+            <div class="card" style="padding:1.5rem; border-top: 4px solid ${colorClass}; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); border-radius:12px;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:1rem;">
+                    <div style="width:50px; height:50px; border-radius:50%; background:var(--bg-main); color:var(--text-main); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold;">
+                        ${b.nombre.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Debería (Teórico)</small>
-                        <span style="font-weight:600;">${item.totalDeberia.toFixed(2)}€</span>
+                    <h3 style="margin:0;">${b.nombre}</h3>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:1rem;">
+                    <div style="background:var(--bg-main); padding:10px; border-radius:8px;">
+                        <small style="color:var(--text-muted); display:block; font-size:0.75rem;">Aportado (Ingresos)</small>
+                        <strong style="color:var(--success);">${parseFloat(b.ingresos).toFixed(2)}€</strong>
                     </div>
-                    <div>
-                        <small style="color:var(--text-muted); font-size:0.7rem; display:block; text-transform:uppercase;">Real (Operativo)</small>
-                        <span style="font-weight:600; color:var(--primary);">${item.totalOperativo.toFixed(2)}€</span> <small style="font-size:0.65rem;">(${item.pctOperativo})</small>
+                    <div style="background:var(--bg-main); padding:10px; border-radius:8px;">
+                        <small style="color:var(--text-muted); display:block; font-size:0.75rem;">Le corresponde pagar</small>
+                        <strong style="color:var(--text-main);">${parseFloat(b.parte).toFixed(2)}€</strong>
                     </div>
                 </div>
-            </div>
-        `).join('');
 
-    } catch(e) {
-        list.innerHTML = '<p style="padding:1rem; color:var(--danger);">Error al cargar el libro oficial.</p>';
+                <div style="text-align:center; padding:15px; background:${bgBadge}; border-radius:8px; margin-top:auto;">
+                    <small style="text-transform:uppercase; font-size:0.75rem; font-weight:bold; color:${colorClass};">
+                        ${isPositive ? 'El cortijo te debe' : (isNegative ? 'Debes ingresar a la hucha' : 'Cuentas al día')}
+                    </small>
+                    <h2 style="margin:5px 0 0 0; color:${colorClass}; font-size:1.8rem;">
+                        ${Math.abs(b.saldo).toFixed(2)}€
+                    </h2>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch (error) {
+        container.innerHTML = '<p style="color:var(--danger); grid-column:1/-1;">Error conectando con la Bóveda Central de Balances.</p>';
+        console.error("Error en Balances V3:", error);
     }
 }
 
 function openExpenseModal() {
-    const activeMembers = CONFIG.FAMILY_MEMBERS.filter(m => CONFIG.FAMILY_STATUS[m] === 'activo');
-    
+    const membersOpts = cachedMembers.map(m => `<option value="${m}">${m}</option>`).join('');
     openModal('Añadir Gasto', `
         <form id="ex-form">
             <div class="form-group"><label>Concepto</label><input type="text" id="exc" placeholder="Ej: Pintura Fachada" required></div>
@@ -413,20 +298,9 @@ function openExpenseModal() {
             </div>
             <div class="form-group">
                 <label>Pagado por</label>
-                <select id="exp">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('')}</select>
-            </div>
-            <div class="form-group">
-                <label>Participantes Activos (Solo ellos entran en reparto)</label>
-                <div id="active-participants-list" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; background:var(--bg-main); border-radius:8px;">
-                    ${activeMembers.map(m => `
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" name="active-p" value="${m}" checked> ${m}
-                        </label>
-                    `).join('')}
-                </div>
+                <select id="exp">${membersOpts}</select>
             </div>
             <div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div>
-            <div class="form-group"><label>Ticket/Factura</label><input type="file" id="exf"></div>
             <button type="submit" id="exb" class="btn-primary" style="width:100%">💾 Guardar Gasto Inteligente</button>
         </form>
     `);
@@ -437,8 +311,6 @@ function openExpenseModal() {
         btn.disabled = true;
         btn.textContent = 'Guardando...';
 
-        const selectedParticipants = Array.from(document.querySelectorAll('input[name="active-p"]:checked')).map(cb => cb.value);
-
         const data = {
             id: Date.now(),
             concepto: document.getElementById('exc').value,
@@ -446,11 +318,10 @@ function openExpenseModal() {
             fecha: document.getElementById('exd').value,
             pagado_por: document.getElementById('exp').value,
             notas: document.getElementById('exn').value,
-            participantes_activos: JSON.stringify(selectedParticipants),
             year: currentExpYear
         };
 
-        await CortijoAPI.createExpense(data, document.getElementById('exf').files[0]);
+        await CortijoAPI.createExpense(data);
         renderExpenses();
         closeModal();
     };
@@ -458,7 +329,7 @@ function openExpenseModal() {
 
 function openEditExpenseModal(id) {
     const exp = cachedExpenses.find(e => e.id == id);
-    openModal('Editar Gasto', `<form id="ee-form"><div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div><div class="form-group"><label>Pagado por</label><select id="eep">${CONFIG.FAMILY_MEMBERS.map(m => `<option value="${m}" ${m==exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    openModal('Editar Gasto', `<form id="ee-form"><div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div><div class="form-group"><label>Pagado por</label><select id="eep">${cachedMembers.map(m => `<option value="${m}" ${m==exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
     document.getElementById('ee-form').onsubmit = async (e) => {
         e.preventDefault();
         await CortijoAPI.updateExpense(id, { concepto: document.getElementById('eec').value, cantidad: document.getElementById('eea').value, pagado_por: document.getElementById('eep').value });
@@ -731,11 +602,18 @@ async function handleCredentialResponse(r) {
     } else { alert("Usuario no autorizado"); }
 }
 
-function showAuthenticatedUI() {
+async function showAuthenticatedUI() {
     ['login-section', 'auth-container', 'public-nav'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     ['private-nav', 'user-info', 'mobile-menu-btn'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-avatar').src = currentUser.avatar;
+    
+    try {
+        cachedMembers = await CortijoAPI.getConfiguracion();
+    } catch(e) {
+        cachedMembers = ["Antonio", "Jorge", "Raquel", "Rebeca", "Tete", "Angelita"]; 
+    }
+
     showSection('calendar');
 }
 

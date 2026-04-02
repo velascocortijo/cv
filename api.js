@@ -1,49 +1,39 @@
-// VERSION: V1.4.0 - Soporte para Totales Anuales Centralizados
-/**
- * API.JS - CLIENTE PARA EL BACKEND DEL CORTIJO VELASCO
- */
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbxQezD4Q_eJTA0FWXZMQ5IT0DRDDKsOtv373tyTGhWv5zBoMCTQJvR9WPeRYo8mYgZB/exec';
+// VERSION: V3.0.0 - Cliente API Single Source of Truth
+const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
 
 const API = {
+    // --- AUTENTICACIÓN ---
+    async checkEmail(email) {
+        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    // --- CONFIGURACIÓN FAMILIAR ---
+    async getConfiguracion() {
+        const response = await fetch(`${API_URL}?action=getConfiguracion`, { credentials: 'omit' });
+        return await response.json();
+    },
+
+    // --- MOTOR MATEMÁTICO (BALANCES) ---
+    async getBalances(year) {
+        const response = await fetch(`${API_URL}?action=getBalances&year=${year}`, { credentials: 'omit' });
+        return await response.json();
+    },
+
     // --- GASTOS ---
     async getExpenses(year) {
         const response = await fetch(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
-    async createExpense(expenseData, fileBlob = null, folderName = null) {
-        let urlDrive = '';
-        if (fileBlob) {
-            urlDrive = await this.uploadToDrive(fileBlob, folderName);
-        }
-        const payload = { ...expenseData, url_drive: urlDrive || expenseData.url_drive };
+    async createExpense(data) {
         const response = await fetch(API_URL + '?action=create', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
+            method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },
-
-    async updateExpense(id, data) {
-        const payload = { id, ...data };
-        const response = await fetch(API_URL + '?action=update', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
     async deleteExpense(id) {
         const response = await fetch(API_URL + '?action=delete', {
-            method: 'POST',
-            body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
+            method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },
@@ -53,259 +43,26 @@ const API = {
         const response = await fetch(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-
-    async createIncome(incomeData, fileBlob = null, folderName = null) {
-        let urlDrive = '';
-        if (fileBlob) {
-            urlDrive = await this.uploadToDrive(fileBlob, folderName);
-        }
-        const payload = { ...incomeData, url_drive: urlDrive || incomeData.url_drive };
+    async createIncome(data) {
         const response = await fetch(API_URL + '?action=addIncome', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
+             method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },
-
-    async updateIncome(id, data) {
-        const payload = { id, ...data };
-        const response = await fetch(API_URL + '?action=updateIncome', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
     async deleteIncome(id) {
         const response = await fetch(API_URL + '?action=deleteIncome', {
-            method: 'POST',
-            body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
+             method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },
 
-    // --- DOCUMENTOS ---
-    async getDocuments(year) {
-        const response = await fetch(`${API_URL}?action=listDocuments&year=${year}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    // SUBIDA ATÓMICA (Sube archivo y guarda datos en un solo paso para evitar pérdida de URL)
-    async uploadAndRecordDocument(docData, file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const base64 = reader.result;
-                const payload = {
-                    ...docData,
-                    base64: base64,
-                    fileName: file.name
-                };
-                const res = await fetch(API_URL + '?action=uploadAndRecord', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    credentials: 'omit'
-                });
-                const result = await res.json();
-                if (result.success) resolve(result);
-                else reject(new Error(result.error || 'Error en el servidor'));
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    },
-
-    async updateDocument(id, data) {
-        const response = await fetch(API_URL + '?action=updateDocument', {
-            method: 'POST',
-            body: JSON.stringify({ id, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async deleteDocument(id) {
-        const response = await fetch(API_URL + '?action=deleteDocument', {
-            method: 'POST',
-            body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    // --- TAREAS (KANBAN) ---
-    async getTasks(year) {
-        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    async addTask(taskData) {
-        const response = await fetch(API_URL + '?action=addTask', {
-            method: 'POST',
-            body: JSON.stringify(taskData),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async updateTask(id, data) {
-        const response = await fetch(API_URL + '?action=updateTask', {
-            method: 'POST',
-            body: JSON.stringify({ id, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async deleteTask(id) {
-        const response = await fetch(API_URL + '?action=deleteTask', {
-            method: 'POST',
-            body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    // --- DRIVE (Para Gastos) ---
-    async uploadToDrive(file, folderName = null) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const base64 = reader.result;
-                const payload = {
-                    base64: base64,
-                    fileName: file.name,
-                    folderName: folderName
-                };
-                const res = await fetch(API_URL + '?action=upload', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    credentials: 'omit'
-                });
-                const data = await res.json();
-                if (data.url && !data.url.startsWith('error')) resolve(data.url);
-                else reject(new Error(data.error || 'Error subiendo a Drive'));
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    },
-
-    async getBalance(year) {
-        const response = await fetch(`${API_URL}?action=balance&year=${year}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    async checkEmail(email) {
-        const response = await fetch(`${API_URL}?action=isAuthorized&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    // --- INVENTARIO ---
+    // --- INVENTARIO & TAREAS ---
     async getInventory() {
         const response = await fetch(`${API_URL}?action=listInventory`, { credentials: 'omit' });
         return await response.json();
     },
-
-    async addInventory(data, file = null) {
-        let urlDrive = '';
-        if (file) {
-            urlDrive = await this.uploadToDrive(file, 'Inventario');
-        }
-        const payload = { ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetch(API_URL + '?action=addInventory', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async updateInventory(id, data, file = null) {
-        let urlDrive = '';
-        if (file) {
-            urlDrive = await this.uploadToDrive(file, 'Inventario');
-        }
-        const payload = { id, ...data, foto_url: urlDrive || data.foto_url };
-        const response = await fetch(API_URL + '?action=updateInventory', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async deleteInventory(id) {
-        const response = await fetch(API_URL + '?action=deleteInventory', {
-            method: 'POST',
-            body: JSON.stringify({ id }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    // --- COPIAS DE SEGURIDAD ---
-    async triggerBackup(email) {
-        const response = await fetch(`${API_URL}?action=backup&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    // --- AUDITORÍA ---
-    async listAudit(email) {
-        const response = await fetch(`${API_URL}?action=listAudit&email=${encodeURIComponent(email)}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    // --- PENDIENTES FAMILIARES EXCLUIDOS (AÑADIDO PARA ANGELITA) ---
-    async savePendingBalance(payload) {
-        const response = await fetch(API_URL + '?action=savePending', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
-        return await response.json();
-    },
-
-    async getPendingBalances() {
-        const response = await fetch(`${API_URL}?action=listPending`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    async calculateSettlement(year) {
-        const response = await fetch(`${API_URL}?action=calculateSettlement&year=${year}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    // --- TOTALES ANUALES ---
-    async getAnnualTotals(year) {
-        const response = await fetch(`${API_URL}?action=getAnnualTotals&year=${year}`, { credentials: 'omit' });
-        return await response.json();
-    },
-
-    async refreshAnnualTotals(year) {
-        const response = await fetch(API_URL + '?action=refreshAnnualTotals', {
-            method: 'POST',
-            body: JSON.stringify({ year }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            credentials: 'omit'
-        });
+    async getTasks(year) {
+        const response = await fetch(`${API_URL}?action=listTasks&year=${year}`, { credentials: 'omit' });
         return await response.json();
     }
 };
