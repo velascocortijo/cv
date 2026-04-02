@@ -1,5 +1,5 @@
 // VERSION: V2.1.0 - Sincronización Total con Backend V2.0.7
-const API_URL = 'https://script.google.com/macros/s/AKfycbzKJuZgxKyz9J5In2Tym9BuBtItgt4rLMI4FNFB9b94hbXrIbzdVP56VDjSswhngJsN/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby9j5TIbJK8ZBnjuGbDBfZjrXhOdEyEHyX7zDwhn7X6BxAXKX2YVP6ZVE4mJgcmJXqN/exec';
 
 const CortijoAPI = {
     // --- AUTH ---
