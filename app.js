@@ -31,6 +31,9 @@ function showSection(name) {
 }
 
 // --- LOGIN (GOOGLE IDENTITY CALLBACK) ---
+function showLogin() { document.getElementById('auth-container').classList.remove('hidden'); }
+function hideLogin() { document.getElementById('auth-container').classList.add('hidden'); }
+
 function handleCredentialResponse(response) {
     const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
     currentUser = { email: payload.email, name: payload.name, picture: payload.picture };
