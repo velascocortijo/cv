@@ -302,37 +302,57 @@ function openExpenseModal() {
             </div>
             <div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div>
             <button type="submit" id="exb" class="btn-primary" style="width:100%">💾 Guardar Gasto Inteligente</button>
-        </form>
+            <div class="form-group"> <label>Factura / Justificante (Opcional)</label> <input type="file" id="exf" accept="image/*,.pdf">
+            </div>
+            </form>
     `);
 
     document.getElementById('ex-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('exb');
-        btn.disabled = true;
-        btn.textContent = 'Guardando...';
+    e.preventDefault();
+    const btn = document.getElementById('exb');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
 
-        const data = {
-            id: Date.now(),
-            concepto: document.getElementById('exc').value,
-            cantidad: document.getElementById('exa').value,
-            fecha: document.getElementById('exd').value,
-            pagado_por: document.getElementById('exp').value,
-            notas: document.getElementById('exn').value,
-            year: currentExpYear
-        };
+    const file = document.getElementById('exf').files[0];
 
-        await CortijoAPI.createExpense(data);
-        renderExpenses();
-        closeModal();
+    const data = {
+        id: Date.now(),
+        concepto: document.getElementById('exc').value,
+        cantidad: document.getElementById('exa').value,
+        fecha: document.getElementById('exd').value,
+        pagado_por: document.getElementById('exp').value,
+        notas: document.getElementById('exn').value,
+        year: currentExpYear
+    };
+
+    if (file) {
+        const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        data.fileBase64 = base64;
+        data.fileName = file.name;
+        data.mimeType = file.type || 'application/octet-stream';
+    }
+
+    await CortijoAPI.createExpense(data);
+    renderExpenses();
+    closeModal();
     };
 }
 
 function openEditExpenseModal(id) {
     const exp = cachedExpenses.find(e => e.id == id);
-    openModal('Editar Gasto', `<form id="ee-form"><div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div><div class="form-group"><label>Pagado por</label><select id="eep">${cachedMembers.map(m => `<option value="${m}" ${m==exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    openModal('Editar Gasto', `<form id="ee-form"><div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div><div class="form-group"><label>Pagado por</label><select id="eep"><div class="form-group"><label>Notas</label><textarea id="een">${exp.notas || ''}</textarea></div>${cachedMembers.map(m => `<option value="${m}" ${m==exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
     document.getElementById('ee-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.updateExpense(id, { concepto: document.getElementById('eec').value, cantidad: document.getElementById('eea').value, pagado_por: document.getElementById('eep').value });
+        await CortijoAPI.updateExpense(id, { 
+            concepto: document.getElementById('eec').value,
+            cantidad: document.getElementById('eea').value,
+            pagado_por: document.getElementById('eep').value,
+            notas: document.getElementById('een').value });
         renderExpenses(); closeModal();
     };
 }
@@ -381,7 +401,7 @@ function filterIncome(query) {
                     <div style="font-weight:600;">${e.concepto}</div>
                     ${e.notas ? `<div style="font-size:0.75rem; color:var(--text-muted);">${e.notas}</div>` : ''}
                 </td>
-                <td><span class="badge" style="background:var(--bg-main); font-size:0.7rem;">${e.categoria}</span></td>
+                <td><span class="badge" style="background:var(--accent); color:white; font-size:0.7rem;">${e.categoria}</span>
                 <td class="amount" style="color:var(--success); font-weight:700;">+${importe.toFixed(2)}€</td>
                 <td>${e.recibido_de || '-'}</td>
                 <td>
@@ -439,32 +459,40 @@ function openIncomeModal() {
     `);
 
     document.getElementById('in-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('inc-btn');
-        btn.disabled = true;
-        btn.textContent = 'Subiendo a Drive...';
+    e.preventDefault();
+    const btn = document.getElementById('inc-btn');
+    btn.disabled = true;
+    btn.textContent = 'Subiendo a Drive...';
 
-        const data = {
-            id: Date.now(),
-            concepto: document.getElementById('inc-c').value,
-            importe: document.getElementById('inc-a').value,
-            fecha: document.getElementById('inc-d').value,
-            categoria: document.getElementById('inc-cat').value,
-            recibido_de: document.getElementById('inc-r').value,
-            notas: document.getElementById('inc-n').value,
-            year: currentIncYear
-        };
+    const file = document.getElementById('inc-f').files[0];
 
-        try {
-            await CortijoAPI.createIncome(data, document.getElementById('inc-f').files[0]);
-            renderIncome();
-            closeModal();
-        } catch (err) {
-            alert("Error al guardar: " + err);
-            btn.disabled = false;
-            btn.textContent = 'Guardar Ingreso';
-        }
+    const data = {
+        id: Date.now(),
+        concepto: document.getElementById('inc-c').value,
+        importe: document.getElementById('inc-a').value,
+        fecha: document.getElementById('inc-d').value,
+        categoria: document.getElementById('inc-cat').value,
+        recibido_de: document.getElementById('inc-r').value,
+        notas: document.getElementById('inc-n').value,
+        year: currentIncYear
     };
+
+    if (file) {
+        const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        data.fileBase64 = base64;
+        data.fileName = file.name;
+        data.mimeType = file.type || 'application/octet-stream';
+    }
+
+    await CortijoAPI.createIncome(data);
+    renderIncome();
+    closeModal();
+};
 }
 
 function openEditIncomeModal(id) {
