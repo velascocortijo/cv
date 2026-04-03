@@ -288,7 +288,7 @@ async function renderPersonalZone(year) {
 }
 
 function openExpenseModal() {
-    const membersOpts = cachedMembers.map(m => `<option value="${m}">${m}</option>`).join('');
+    const membersOpts = (cachedMembers || []).map(m => `<option value="${m}">${m}</option>`).join('');
     openModal('Añadir Gasto', `
         <form id="ex-form">
             <div class="form-group"><label>Concepto</label><input type="text" id="exc" placeholder="Ej: Pintura Fachada" required></div>
