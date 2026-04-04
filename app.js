@@ -727,19 +727,39 @@ async function renderDocuments() {
     if (!list) return;
     try {
         cachedDocs = await CortijoAPI.getDocuments(currentDocYear);
+        if (cachedDocs.length === 0) {
+            list.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding:2rem; color:var(--text-muted);">No hay documentos registrados para este año.</p>';
+            return;
+        }
         list.innerHTML = cachedDocs.map(d => {
             const ext = String(d.type).toLowerCase();
-            let emoji = '📄';
-            if (ext === 'pdf') emoji = '📕';
-            else if (['png','jpg','jpeg','gif'].includes(ext)) emoji = '🖼️';
-            else if (['xls','xlsx','csv'].includes(ext)) emoji = '📊';
-            else if (['doc','docx'].includes(ext)) emoji = '📝';
+            let iconHtml = '<div style="font-size:3rem; margin:auto;">📄</div>';
             
-            return `<div class="document-item" style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:white;">
-                <span style="font-size:1.8rem;">${emoji}</span>
-                <h4 style="margin:0; flex:1; font-size:0.95rem;">${d.name}</h4>
-                <button class="btn-icon" style="font-size:0.9rem;" onclick="openEditDocNameModal('${d.id}')" title="Editar Nombre">✏️</button>
-                <button class="btn-small" onclick="window.open('${d.url_drive}', '_blank')">Ver Archivo</button>
+            if (ext === 'pdf') {
+                iconHtml = `<img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width:55px;height:55px;margin:auto;display:block;">`;
+            } else if (['xls','xlsx','csv'].includes(ext)) {
+                iconHtml = `<img src="https://upload.wikimedia.org/wikipedia/commons/3/34/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg" style="width:55px;height:55px;margin:auto;display:block;">`;
+            } else if (['doc','docx'].includes(ext)) {
+                iconHtml = `<img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Microsoft_Office_Word_%282019%E2%80%93present%29.svg" style="width:55px;height:55px;margin:auto;display:block;">`;
+            } else if (['png','jpg','jpeg','gif','webp'].includes(ext)) {
+                iconHtml = `<img src="${getDriveDirectLink(d.url_drive)}" style="width:65px;height:65px;object-fit:cover;border-radius:8px;margin:auto;display:block;box-shadow:0 2px 4px rgba(0,0,0,0.1);">`;
+            }
+            
+            return `<div class="card" style="display:flex; flex-direction:column; justify-content:space-between; height:100%; padding:0; overflow:hidden; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.05); transition:transform 0.2s, box-shadow 0.2s;">
+                <div style="flex:1; padding: 1.5rem; text-align:center; cursor:pointer;" onclick="window.open('${d.url_drive}', '_blank')" onmouseover="this.parentElement.style.transform='translateY(-3px)'; this.parentElement.style.boxShadow='0 8px 15px rgba(0,0,0,0.1)';" onmouseout="this.parentElement.style.transform='none'; this.parentElement.style.boxShadow='0 4px 10px rgba(0,0,0,0.05)';">
+                   <div style="margin-bottom: 1rem; height:65px; display:flex; align-items:center;">${iconHtml}</div>
+                   <h4 style="margin:0; font-size:1rem; font-weight:600; color:var(--text-main); word-break: break-word; line-height:1.3;">${d.name}</h4>
+                   <p style="margin:8px 0 0 0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">${ext.toUpperCase()} • ${d.size}</p>
+                   <p style="margin:4px 0 0 0; font-size:0.7rem; color:var(--text-muted);">${formatDateDisplay(d.date || d.timestamp)}</p>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--border); background:var(--bg-card);">
+                   <button style="background:transparent; border:none; border-right:1px solid var(--border); padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="window.open('${d.url_drive}', '_blank')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
+                       👁️ Ver
+                   </button>
+                   <button style="background:transparent; border:none; padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="openEditDocNameModal('${d.id}')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
+                       ✏️ Nombrar
+                   </button>
+                </div>
             </div>`;
         }).join('');
     } catch (e) { }
