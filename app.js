@@ -231,58 +231,95 @@ async function filterExpenses(query) {
 
 // --- ZONA PERSONAL (NUEVO MOTOR V3) ---
 async function renderPersonalZone(year) {
-    const container = document.getElementById('personal-zone-container');
-    if (!container) return;
+    const tableContainer = document.getElementById('resumen-tabla-container');
+    const globalContainer = document.getElementById('resumen-global-container');
+    if (!tableContainer || !globalContainer) return;
 
-    container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">Sincronizando balances con el motor central...</p>';
+    tableContainer.innerHTML = '<p style="text-align:center;">Sincronizando balances con el motor central...</p>';
+    globalContainer.innerHTML = '';
 
     try {
         const balances = await CortijoAPI.getBalances(year);
 
         if (balances.length === 0) {
-            container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No se encontraron operaciones para este año.</p>';
+            tableContainer.innerHTML = '<p style="text-align:center;">No se encontraron operaciones para este año.</p>';
             return;
         }
 
-        container.innerHTML = balances.map(b => {
-            const isPositive = b.saldo > 0;
-            const isNegative = b.saldo < 0;
-            const colorClass = isPositive ? 'var(--success)' : (isNegative ? 'var(--danger)' : 'var(--text-muted)');
-            const bgBadge = isPositive ? 'rgba(52, 211, 153, 0.1)' : (isNegative ? 'rgba(239, 68, 68, 0.1)' : 'rgba(156, 163, 175, 0.1)');
-
-            return `
-            <div class="card" style="padding:1.5rem; border-top: 4px solid ${colorClass}; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); border-radius:12px;">
-                <div style="display:flex; align-items:center; gap:15px; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:1rem;">
-                    <div style="width:50px; height:50px; border-radius:50%; background:var(--bg-main); color:var(--text-main); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold;">
-                        ${b.nombre.charAt(0).toUpperCase()}
-                    </div>
-                    <h3 style="margin:0;">${b.nombre}</h3>
-                </div>
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:1rem;">
-                    <div style="background:var(--bg-main); padding:10px; border-radius:8px;">
-                        <small style="color:var(--text-muted); display:block; font-size:0.75rem;">Aportado (Ingresos)</small>
-                        <strong style="color:var(--success);">${parseFloat(b.ingresos).toFixed(2)}€</strong>
-                    </div>
-                    <div style="background:var(--bg-main); padding:10px; border-radius:8px;">
-                        <small style="color:var(--text-muted); display:block; font-size:0.75rem;">Le corresponde pagar</small>
-                        <strong style="color:var(--text-main);">${parseFloat(b.parte).toFixed(2)}€</strong>
-                    </div>
-                </div>
-
-                <div style="text-align:center; padding:15px; background:${bgBadge}; border-radius:8px; margin-top:auto;">
-                    <small style="text-transform:uppercase; font-size:0.75rem; font-weight:bold; color:${colorClass};">
-                        ${isPositive ? 'El cortijo te debe' : (isNegative ? 'Debes ingresar a la hucha' : 'Cuentas al día')}
-                    </small>
-                    <h2 style="margin:5px 0 0 0; color:${colorClass}; font-size:1.8rem;">
-                        ${Math.abs(b.saldo).toFixed(2)}€
-                    </h2>
-                </div>
-            </div>`;
+        let totalGastos = 0;
+        let totalIngresos = 0;
+        
+        const trs = balances.map(b => {
+            const gastos = parseFloat(b.gastos) || 0;
+            const ingresos = parseFloat(b.ingresos) || 0;
+            
+            // Atencion: totalIngresos y TotalGastos deben ser acumulativos
+            // Pero en backend.gs estos registros vienen desglosados únicos por persona, el sum sumará el total real.
+            totalGastos += gastos;
+            totalIngresos += ingresos;
+            
+            const parte = parseFloat(b.parte) || 0;
+            const saldo = parseFloat(b.saldo) || 0;
+            
+            const isOwe = saldo < -0.01;
+            const isReceive = saldo > 0.01;
+            
+            let saldoText, bgClass;
+            if (isOwe) {
+                saldoText = `Debe pagar ${Math.abs(saldo).toFixed(2)}€`;
+                bgClass = 'color: #ef4444; font-weight: bold;'; // Rojo puro (Tailwind red-500)
+            } else if (isReceive) {
+                // Azul solicitado por el usuario
+                saldoText = `Debe recibir ${Math.abs(saldo).toFixed(2)}€`;
+                bgClass = 'color: #3b82f6; font-weight: bold;'; // Azul puro (Tailwind blue-500)
+            } else {
+                saldoText = `Cuentas al día`;
+                bgClass = 'color: #9ca3af;'; // Gris (Tailwind gray-400)
+            }
+            
+            return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px;"><strong>${b.nombre}</strong></td>
+                <td style="padding:12px;">${parte.toFixed(2)}€</td>
+                <td style="padding:12px;">${ingresos.toFixed(2)}€</td>
+                <td style="padding:12px; ${bgClass}">${saldoText}</td>
+            </tr>`;
         }).join('');
 
+        const resultado = totalIngresos - totalGastos;
+        const resText = resultado >= 0 ? `+${resultado.toFixed(2)}€` : `${resultado.toFixed(2)}€`;
+        const resColor = resultado >= 0 ? 'var(--success)' : 'var(--danger)';
+
+        globalContainer.innerHTML = `
+            <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Total Gastos Año</small>
+                <strong style="color:var(--danger); font-size:1.5rem; display:block; margin-top:5px;">${totalGastos.toFixed(2)}€</strong>
+            </div>
+            <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Total Ingresos Año</small>
+                <strong style="color:var(--success); font-size:1.5rem; display:block; margin-top:5px;">${totalIngresos.toFixed(2)}€</strong>
+            </div>
+            <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Resultado del Año</small>
+                <strong style="color:${resColor}; font-size:1.5rem; display:block; margin-top:5px;">${resText}</strong>
+            </div>
+        `;
+
+        tableContainer.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; background:white; font-size:0.95rem;">
+                <thead style="background:var(--bg-main); text-align:left; border-bottom:2px solid var(--border);">
+                    <tr>
+                        <th style="padding:15px 12px; white-space:nowrap;">Persona</th>
+                        <th style="padding:15px 12px; white-space:nowrap;">Le corresponde pagar</th>
+                        <th style="padding:15px 12px; white-space:nowrap;">Ha soportado</th>
+                        <th style="padding:15px 12px; white-space:nowrap;">Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody>${trs}</tbody>
+            </table>
+        `;
+
     } catch (error) {
-        container.innerHTML = '<p style="color:var(--danger); grid-column:1/-1;">Error conectando con la Bóveda Central de Balances.</p>';
+        tableContainer.innerHTML = '<p style="color:var(--danger); text-align:center;">Error conectando con la Bóveda Central de Balances.</p>';
         console.error("Error en Balances V3:", error);
     }
 }
