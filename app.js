@@ -589,21 +589,54 @@ async function deleteInventoryItem(id) { if (confirm("¿Borrar?")) { await Corti
 function openInventoryModal() {
     openModal('Añadir Inventario', `
         <form id="inv-form">
-            <div class="form-group"><label>Artículo</label><input type="text" id="inva" required></div>
             <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div class="form-group"><label>Categoría</label><select id="invc"><option value="Herramientas">Herramientas</option><option value="Muebles">Muebles</option><option value="Cocina">Cocina</option></select></div>
+                <div class="form-group"><label>Artículo</label><input type="text" id="inva" required></div>
+                <div class="form-group"><label>Marca / Modelo</label><input type="text" id="invm"></div>
+            </div>
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Categoría</label><select id="invc"><option value="Herramientas">Herramientas</option><option value="Muebles">Muebles</option><option value="Maquinaria">Maquinaria</option><option value="Seguridad">Seguridad</option></select></div>
                 <div class="form-group"><label>Cantidad</label><input type="number" id="invq" value="1" required></div>
+                <div class="form-group"><label>Unidad</label><input type="text" id="invun" value="Unidades"></div>
             </div>
             <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div class="form-group"><label>Estado</label><select id="inve"><option value="Bueno">Bueno</option><option value="Regular">Regular</option><option value="Malo">Malo</option></select></div>
+                <div class="form-group"><label>Estado</label><select id="inve"><option value="Nuevo">Nuevo</option><option value="Bueno">Bueno</option><option value="Regular">Regular</option><option value="Malo">Malo</option></select></div>
                 <div class="form-group"><label>Ubicación</label><input type="text" id="invu" placeholder="Ej: Trastero superior"></div>
             </div>
-            <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Objeto</button>
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Fecha Revisión</label><input type="date" id="invd" value="${new Date().toISOString().split('T')[0]}"></div>
+                <div class="form-group"><label>Precio (€)</label><input type="number" step="0.01" id="invp"></div>
+            </div>
+            <div class="form-group"><label>Observaciones</label><textarea id="invo"></textarea></div>
+            <div class="form-group"><label>Foto (Opcional)</label><input type="file" id="invf" accept="image/*"></div>
+            <button type="submit" id="invb" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Objeto</button>
         </form>
     `);
     document.getElementById('inv-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.createInventory({ id: Date.now(), articulo: document.getElementById('inva').value, categoria: document.getElementById('invc').value, cantidad: document.getElementById('invq').value, estado: document.getElementById('inve').value, ubicacion: document.getElementById('invu').value, timestamp: new Date().toISOString() });
+        const btn = document.getElementById('invb');
+        btn.disabled = true; btn.textContent = 'Guardando...';
+        
+        const data = {
+            id: 'INV-' + Date.now().toString().substring(8),
+            articulo: document.getElementById('inva').value,
+            marca_modelo: document.getElementById('invm').value,
+            categoria: document.getElementById('invc').value,
+            cantidad: document.getElementById('invq').value,
+            unidad: document.getElementById('invun').value,
+            estado: document.getElementById('inve').value,
+            ubicacion: document.getElementById('invu').value,
+            fecha_revision: document.getElementById('invd').value,
+            observaciones: document.getElementById('invo').value,
+            precio: document.getElementById('invp').value,
+            timestamp: new Date().toLocaleString()
+        };
+        const file = document.getElementById('invf').files[0];
+        if (file) {
+            data.fileBase64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result.split(',')[1]); r.readAsDataURL(file); });
+            data.fileName = file.name;
+            data.mimeType = file.type;
+        }
+        await CortijoAPI.createInventory(data);
         loadInventoryData().then(() => renderInventory());
         closeModal();
     };
@@ -632,7 +665,14 @@ function handleFileUpload(event) {
         e.preventDefault();
         const btn = document.getElementById('docbtn');
         btn.disabled = true; btn.textContent = 'Subiendo al Cortijo...';
-        await CortijoAPI.uploadAndRecordDocument({ id: Date.now(), name: document.getElementById('docn').value, year: currentDocYear, date: new Date().toISOString() }, file);
+        await CortijoAPI.uploadAndRecordDocument({ 
+            id: Date.now(), 
+            name: document.getElementById('docn').value, 
+            type: file.name.split('.').pop() || 'file',
+            size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+            year: currentDocYear, 
+            date: new Date().toISOString() 
+        }, file);
         renderDocuments();
         closeModal();
     };
