@@ -251,23 +251,26 @@ async function renderPersonalZone(year) {
         }
 
         const totalGastos = teorico.length > 0 ? parseFloat(teorico[0].totalgastosaño || 0) : 0;
-        const totalIngresos = ingresosData.reduce((s,i) => s + parseFloat(i.importe||0), 0);
+        const totalIngresos = ingresosData.reduce((s,i) => s + parseFloat(String(i.importe||'0').replace(',','.')), 0);
         const resultado = totalIngresos - totalGastos;
         
+        const formatES = (n) => Number(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2});
+        
         const trs = pagos.map(p => {
-            const gastoNeto = parseFloat(p.gastoneto) || 0;
-            const parte = parseFloat(p.parteteorica) || 0;
-            const dif = parseFloat(p.diferencia) || 0;
+            const gastoNeto = parseFloat(String(p.gastoneto||'0').replace(',','.')) || 0;
+            const parte = parseFloat(String(p.parteteorica||'0').replace(',','.')) || 0;
+            const dif = parseFloat(String(p.diferencia||'0').replace(',','.')) || 0;
             
-            const isOwe = dif > 0.01;
-            const isReceive = dif < -0.01;
+            // Regla margen error redondeo < 0.10 => Cuentas al día
+            const isOwe = dif >= 0.10;
+            const isReceive = dif <= -0.10;
             
             let saldoText, bgClass;
             if (isOwe) {
-                saldoText = `Debe pagar ${dif.toFixed(2)}€`;
+                saldoText = `Debe pagar ${formatES(dif)}€`;
                 bgClass = 'color: #ef4444; font-weight: bold;'; 
             } else if (isReceive) {
-                saldoText = `Debe recibir ${Math.abs(dif).toFixed(2)}€`;
+                saldoText = `Debe recibir ${formatES(Math.abs(dif))}€`;
                 bgClass = 'color: #3b82f6; font-weight: bold;'; 
             } else {
                 saldoText = `Cuentas al día`;
@@ -276,23 +279,23 @@ async function renderPersonalZone(year) {
             
             return `<tr style="border-bottom:1px solid var(--border);">
                 <td style="padding:12px;"><strong>${p.persona}</strong></td>
-                <td style="padding:12px;">${parte.toFixed(2)}€</td>
-                <td style="padding:12px;">${gastoNeto.toFixed(2)}€</td>
+                <td style="padding:12px;">${formatES(parte)}€</td>
+                <td style="padding:12px;">${formatES(gastoNeto)}€</td>
                 <td style="padding:12px; ${bgClass}">${saldoText}</td>
             </tr>`;
         }).join('');
 
-        const resText = resultado >= 0 ? `+${resultado.toFixed(2)}€` : `${resultado.toFixed(2)}€`;
+        const resText = resultado >= 0 ? `+${formatES(resultado)}€` : `${formatES(resultado)}€`;
         const resColor = resultado >= 0 ? 'var(--success)' : 'var(--danger)';
 
         globalContainer.innerHTML = `
             <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                 <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Total Gastos Año</small>
-                <strong style="color:var(--danger); font-size:1.5rem; display:block; margin-top:5px;">${totalGastos.toFixed(2)}€</strong>
+                <strong style="color:var(--danger); font-size:1.5rem; display:block; margin-top:5px;">${formatES(totalGastos)}€</strong>
             </div>
             <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                 <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Total Ingresos Año</small>
-                <strong style="color:var(--success); font-size:1.5rem; display:block; margin-top:5px;">${totalIngresos.toFixed(2)}€</strong>
+                <strong style="color:var(--success); font-size:1.5rem; display:block; margin-top:5px;">${formatES(totalIngresos)}€</strong>
             </div>
             <div style="background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                 <small style="color:var(--text-muted); display:block; text-transform:uppercase; font-size:0.75rem; font-weight:bold;">Resultado del Año</small>
@@ -324,7 +327,7 @@ async function renderPersonalZone(year) {
                     <td style="padding:10px;">${formatDateDisplay(r.fecha)}</td>
                     <td style="padding:10px;">${r.de}</td>
                     <td style="padding:10px;">${r.a}</td>
-                    <td style="padding:10px; font-weight:bold;">${(parseFloat(r.importe)||0).toFixed(2)}€</td>
+                    <td style="padding:10px; font-weight:bold;">${formatES(parseFloat(String(r.importe||'0').replace(',','.')))}€</td>
                     <td style="padding:10px; text-align:center;">${driveLink}</td>
                     <td style="padding:10px;">
                         <button class="btn-icon" onclick="openEditTransferenciaModal('${r.id}')" title="Editar">✏️</button>
