@@ -314,6 +314,41 @@ async function renderPersonalZone(year) {
             </table>
         `;
 
+        const trfData = await CortijoAPI.getTransferencias(year);
+        window._cachedTransferencias = trfData;
+        const trfContainer = document.getElementById('transferencias-inline-container');
+        if (trfContainer) {
+            let trfTrs = trfData.map(r => {
+                 let driveLink = r.url_drive ? `<a href="${r.url_drive}" target="_blank" style="text-decoration:none; font-size:1.2rem;">📎 Ver</a>` : '-';
+                 return `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px;">${formatDateDisplay(r.fecha)}</td>
+                    <td style="padding:10px;">${r.de}</td>
+                    <td style="padding:10px;">${r.a}</td>
+                    <td style="padding:10px; font-weight:bold;">${(parseFloat(r.importe)||0).toFixed(2)}€</td>
+                    <td style="padding:10px; text-align:center;">${driveLink}</td>
+                    <td style="padding:10px;">
+                        <button class="btn-icon" onclick="openEditTransferenciaModal('${r.id}')" title="Editar">✏️</button>
+                        <button class="btn-icon" onclick="confirmarBorrarTransferencia('${r.id}')" title="Borrar">🗑️</button>
+                    </td>
+                 </tr>`;
+            }).join('');
+            
+            trfContainer.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; background:white; font-size:0.9rem;">
+                <thead style="background:var(--bg-main); text-align:left;">
+                    <tr>
+                        <th style="padding:12px;">Fecha</th>
+                        <th style="padding:12px;">De</th>
+                        <th style="padding:12px;">A</th>
+                        <th style="padding:12px;">Importe</th>
+                        <th style="padding:12px; text-align:center;">Justificante</th>
+                        <th style="padding:12px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>${trfTrs || '<tr><td colspan="6" style="padding:15px; text-align:center; color:var(--text-muted);">No hay transferencias este año</td></tr>'}</tbody>
+            </table>`;
+        }
+
     } catch (error) {
         tableContainer.innerHTML = '<p style="color:var(--danger); text-align:center;">Error conectando con la Bóveda Central.</p>';
         console.error("Error en Balances V3:", error);
@@ -616,7 +651,16 @@ async function loadInventoryData() { try { cachedInventory = await CortijoAPI.ge
 function renderInventory() {
     const list = document.getElementById('inventory-body');
     if (!list) return;
-    list.innerHTML = cachedInventory.map(i => `<tr><td><img src="${getDriveDirectLink(i.foto_url)}" style="width:40px;height:40px;border-radius:4px;"></td><td>${i.articulo}</td><td>${i.categoria}</td><td>${i.cantidad}</td><td>${i.estado}</td><td>${i.ubicacion}</td><td><button class="btn-icon" onclick="deleteInventoryItem('${i.id}')">🗑️</button></td></tr>`).join('');
+    list.innerHTML = cachedInventory.map(i => `<tr>
+        <td>${i.foto_url ? `<img src="${getDriveDirectLink(i.foto_url)}" style="width:40px;height:40px;border-radius:4px;object-fit:cover;">` : '📦'}</td>
+        <td>${i.articulo} ${i.marca_modelo ? `<br><small style="color:gray;">${i.marca_modelo}</small>` : ''}</td>
+        <td>${i.categoria}</td>
+        <td>${i.cantidad} ${i.unidad}</td>
+        <td>${i.estado}</td>
+        <td style="font-weight:bold;">${i.precio ? parseFloat(i.precio).toFixed(2) + '€' : '-'}</td>
+        <td>${i.ubicacion}</td>
+        <td><button class="btn-icon" onclick="deleteInventoryItem('${i.id}')">🗑️</button></td>
+    </tr>`).join('');
 }
 async function deleteInventoryItem(id) { if (confirm("¿Borrar?")) { await CortijoAPI.deleteInventory(id); loadInventoryData().then(() => renderInventory()); } }
 function openInventoryModal() {
@@ -676,36 +720,77 @@ function openInventoryModal() {
 }
 
 // --- DOCUMENTS ---
+let cachedDocs = [];
 function changeDocYear(year) { currentDocYear = year; renderDocuments(); }
 async function renderDocuments() {
     const list = document.getElementById('document-list');
     if (!list) return;
     try {
-        const data = await CortijoAPI.getDocuments(currentDocYear);
-        list.innerHTML = data.map(d => `<div class="document-item"><span>📄</span><h4>${d.name}</h4><button class="btn-small" onclick="window.open('${d.url_drive}', '_blank')">Ver</button></div>`).join('');
+        cachedDocs = await CortijoAPI.getDocuments(currentDocYear);
+        list.innerHTML = cachedDocs.map(d => {
+            const ext = String(d.type).toLowerCase();
+            let emoji = '📄';
+            if (ext === 'pdf') emoji = '📕';
+            else if (['png','jpg','jpeg','gif'].includes(ext)) emoji = '🖼️';
+            else if (['xls','xlsx','csv'].includes(ext)) emoji = '📊';
+            else if (['doc','docx'].includes(ext)) emoji = '📝';
+            
+            return `<div class="document-item" style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:white;">
+                <span style="font-size:1.8rem;">${emoji}</span>
+                <h4 style="margin:0; flex:1; font-size:0.95rem;">${d.name}</h4>
+                <button class="btn-icon" style="font-size:0.9rem;" onclick="openEditDocNameModal('${d.id}')" title="Editar Nombre">✏️</button>
+                <button class="btn-small" onclick="window.open('${d.url_drive}', '_blank')">Ver Archivo</button>
+            </div>`;
+        }).join('');
     } catch (e) { }
 }
+
 function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    openModal('Nombrar Documento', `
+    if (event) event.preventDefault();
+    openModal('Subir Documento', `
        <form id="doc-form">
-           <div class="form-group"><label>Nombre del Documento</label><input type="text" id="docn" value="${file.name.split('.')[0]}" required></div>
-           <button type="submit" id="docbtn" class="btn-primary" style="width:100%">Subir Documento</button>
+           <div class="form-group"><label>Archivo</label><input type="file" id="docfile" required></div>
+           <div class="form-group"><label>Nombre del Documento (Opcional)</label><input type="text" id="docn" placeholder="Dejar en blanco para usar nombre original"></div>
+           <button type="submit" id="docbtn" class="btn-primary" style="width:100%">Subir Documento al Cortijo</button>
        </form>
     `);
+    
     document.getElementById('doc-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('docbtn');
-        btn.disabled = true; btn.textContent = 'Subiendo al Cortijo...';
+        btn.disabled = true; btn.textContent = 'Subiendo al Drive y Registrando...';
+        
+        const file = document.getElementById('docfile').files[0];
+        let name = document.getElementById('docn').value.trim();
+        if (!name) name = file.name.split('.')[0];
+        
         await CortijoAPI.uploadAndRecordDocument({ 
             id: Date.now(), 
-            name: document.getElementById('docn').value, 
+            name: name, 
             type: file.name.split('.').pop() || 'file',
             size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
             year: currentDocYear, 
             date: new Date().toISOString() 
         }, file);
+        renderDocuments();
+        closeModal();
+    };
+}
+
+function openEditDocNameModal(id) {
+    const doc = cachedDocs.find(d => d.id == id);
+    if (!doc) return;
+    openModal('Nombrar Documento', `
+        <form id="doc-edit-form">
+            <div class="form-group"><label>Nombre</label><input type="text" id="edocn" value="${doc.name}" required></div>
+            <button type="submit" id="edocbtn" class="btn-primary" style="width:100%">Guardar Cambios</button>
+        </form>
+    `);
+    document.getElementById('doc-edit-form').onsubmit = async (e) => {
+        e.preventDefault();
+        document.getElementById('edocbtn').disabled = true;
+        document.getElementById('edocbtn').textContent = 'Guardando...';
+        await CortijoAPI.updateDoc(id, { name: document.getElementById('edocn').value });
         renderDocuments();
         closeModal();
     };
@@ -797,7 +882,6 @@ async function confirmarBorrarTransferencia(id) {
     if(confirm("¿Eliminar bizum/transferencia?")) {
         const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
         await CortijoAPI.deleteTransferencia(id, year);
-        openAvanzadoModal('transferencias');
         renderPersonalZone(year);
     }
 }
@@ -840,61 +924,46 @@ function openAddTransferenciaModal() {
         }
 
         await CortijoAPI.createTransferencia(data);
-        openAvanzadoModal('transferencias');
+        closeModal();
         renderPersonalZone(year);
     };
 }
 
-async function openAvanzadoModal(type) {
+function openEditTransferenciaModal(id) {
     const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
-    openModal('Cargando...', '<div style="text-align:center; padding: 2rem;">Buscando expedientes y justificantes en la nube...</div>');
-    try {
-        let title = ''; let ths = ''; let trs = ''; let actionHtml = '';
+    const trf = window._cachedTransferencias?.find(t => t.id == id);
+    if (!trf) return;
+    
+    const membersOptsDe = (cachedMembers || []).map(m => `<option value="${m}" ${m == trf.de ? 'selected' : ''}>${m}</option>`).join('');
+    const membersOptsA = (cachedMembers || []).map(m => `<option value="${m}" ${m == trf.a ? 'selected' : ''}>${m}</option>`).join('');
+    
+    openModal('Editar Transferencia', `
+        <form id="tr-edit-form">
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Origen (Sale de)</label><select id="te-de">${membersOptsDe}</select></div>
+                <div class="form-group"><label>Destino (Llega a)</label><select id="te-a">${membersOptsA}</select></div>
+            </div>
+            <div class="form-group"><label>Importe (€)</label><input type="number" step="0.01" id="te-imp" value="${trf.importe || 0}" required></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="te-f" value="${(trf.fecha && trf.fecha.includes('T')) ? trf.fecha.split('T')[0] : trf.fecha}" required></div>
+            <button type="submit" id="te-btn" class="btn-primary" style="width:100%; margin-top:10px;">Actualizar Transferencia</button>
+        </form>
+    `);
+    
+    document.getElementById('tr-edit-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('te-btn');
+        btn.disabled = true;
+        btn.textContent = 'Actualizando...';
         
-        if (type === 'transferencias') {
-            title = 'Transferencias y Bizums (' + year + ')';
-            ths = '<th>Fecha</th><th>De</th><th>A</th><th>Importe</th><th>Justificante</th><th>Acción</th>';
-            actionHtml = '<button class="btn-primary" style="margin-bottom:15px; width:100%;" onclick="openAddTransferenciaModal()">+ Nueva Transferencia o Bizum</button>';
-            const data = await CortijoAPI.getTransferencias(year);
-            trs = data.map(r => {
-                 let driveLink = r.url_drive ? `<a href="${r.url_drive}" target="_blank" style="text-decoration:none; font-size:1.2rem;">📎 Ver</a>` : '-';
-                 return `<tr><td>${formatDateDisplay(r.fecha)}</td><td>${r.de}</td><td>${r.a}</td><td style="font-weight:bold">${(parseFloat(r.importe)||0).toFixed(2)}€</td><td>${driveLink}</td><td><button class="btn-icon" onclick="confirmarBorrarTransferencia('${r.id}')">🗑️</button></td></tr>`;
-            }).join('');
-        } else if (type === 'gastoNeto') {
-            title = 'Gasto Neto (' + year + ')';
-            ths = '<th>Persona</th><th>Gastos Base</th><th>Da a otros</th><th>Recibe de otros</th><th>Gasto Neto</th>';
-            const data = await CortijoAPI.getGastoNeto(year);
-            trs = data.map(r => `<tr><td>${r.persona}</td><td>${(parseFloat(r.gastospagados)||0).toFixed(2)}€</td><td style="color:var(--danger)">-${(parseFloat(r.transferenciassalientes)||0).toFixed(2)}€</td><td style="color:var(--success)">+${(parseFloat(r.transferenciasentrantes)||0).toFixed(2)}€</td><td style="font-weight:bold">${(parseFloat(r.gastoneto)||0).toFixed(2)}€</td></tr>`).join('');
-        } else if (type === 'teorico') {
-            title = 'Reparto Teórico (' + year + ')';
-            ths = '<th>Persona</th><th>% Operativo</th><th>Gastos Globales</th><th>Parte Teórica</th>';
-            const data = await CortijoAPI.getRepartoTeorico(year);
-            trs = data.map(r => `<tr><td>${r.persona}</td><td>${r.porcentajeoperativo}%</td><td>${(parseFloat(r.totalgastosaño)||0).toFixed(2)}€</td><td style="font-weight:bold">${(parseFloat(r.parteteorica)||0).toFixed(2)}€</td></tr>`).join('');
-        } else if (type === 'orden') {
-            title = 'Orden de Pagos (' + year + ')';
-            ths = '<th>Persona</th><th>Neto Actual</th><th>Neto Teórico</th><th>Estado</th>';
-            const data = await CortijoAPI.getOrdenPagos(year);
-            trs = data.map(r => {
-                let dif = parseFloat(r.diferencia)||0;
-                let estado = dif > 0.01 ? `<span style="color:var(--danger); font-weight:bold;">Debe Pagar ${dif.toFixed(2)}€</span>` : 
-                            (dif < -0.01 ? `<span style="color:var(--success); font-weight:bold;">Debe Recibir ${Math.abs(dif).toFixed(2)}€</span>` : 
-                                           `<span style="color:var(--text-muted);">Cuadrado al céntimo</span>`);
-                return `<tr><td>${r.persona}</td><td>${(parseFloat(r.gastoneto)||0).toFixed(2)}€</td><td>${(parseFloat(r.parteteorica)||0).toFixed(2)}€</td><td>${estado}</td></tr>`;
-            }).join('');
-        }
+        await CortijoAPI.updateTransferencia(id, {
+             fecha: document.getElementById('te-f').value,
+             de: document.getElementById('te-de').value,
+             a: document.getElementById('te-a').value,
+             importe: document.getElementById('te-imp').value,
+             year: year
+        });
         
-        openModal(title, `
-             ${actionHtml}
-             <div class="table-container" style="max-height: 55vh; overflow-y: auto;">
-                 <table style="width:100%; border-collapse:collapse; background:white; font-size:0.85rem;">
-                     <thead style="background:var(--bg-card); position:sticky; top:0; z-index:2;">
-                         <tr>${ths}</tr>
-                     </thead>
-                     <tbody style="text-align:center;">${trs || '<tr><td colspan="6">No hay datos en esta modalidad para este año.</td></tr>'}</tbody>
-                 </table>
-             </div>
-        `);
-    } catch (e) {
-        openModal('Error de Conexión', '<p style="color:var(--danger); padding:2rem; text-align:center;">No se pudo conectar. Actualiza el backend en Apps Script.</p>');
-    }
+        closeModal();
+        renderPersonalZone(year);
+    };
 }

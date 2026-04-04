@@ -1,5 +1,5 @@
 // VERSION: V3.0.0 - Cliente API Single Source of Truth
-const API_URL = 'https://script.google.com/macros/s/AKfycbytUY1DopGPGeAfINWxHem25xj3HDK-nSc82snNJdJyS-w6MmBCPnoFbkoUrZuGMA0O/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxdFtYAA9dnLEvcLSkcl06pBW5uhlH_xtT76fdnzm18Z1Ssjx06-YlkGIn6t31sCbnp/exec';
 
 const API = {
     // --- AUTENTICACIÓN ---
@@ -149,6 +149,11 @@ const API = {
     },
     async createTransferencia(data) {
         const response = await fetch(API_URL + '?action=addTransferencia', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit' });
+        return await response.json();
+    },
+    async updateTransferencia(id, data) {
+        data.id = id;
+        const response = await fetch(API_URL + '?action=updateTransferencia', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit' });
         return await response.json();
     },
     async deleteTransferencia(id, year) {
