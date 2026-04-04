@@ -1,5 +1,5 @@
 // VERSION: V3.0.0 - Cliente API Single Source of Truth
-const API_URL = 'https://script.google.com/macros/s/AKfycbxdFtYAA9dnLEvcLSkcl06pBW5uhlH_xtT76fdnzm18Z1Ssjx06-YlkGIn6t31sCbnp/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbystoT7L1RLvTfhttDYoQPfzEzo-RHKvZS7r7PXXVK_LUnLtuhb89KShv2eyCpvLkET/exec';
 
 const API = {
     // --- AUTENTICACIÓN ---
