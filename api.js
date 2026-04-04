@@ -25,8 +25,31 @@ const API = {
         const response = await fetch(`${API_URL}?action=list&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-    async createExpense(data) {
+    async createExpense(data, file) {
+        if (file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    data.fileBase64 = reader.result.split(',')[1];
+                    data.fileName = file.name;
+                    data.mimeType = file.type;
+                    try {
+                        const response = await fetch(API_URL + '?action=create', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit' });
+                        resolve(await response.json());
+                    } catch(e) { reject(e); }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
         const response = await fetch(API_URL + '?action=create', {
+            method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
+        });
+        return await response.json();
+    },
+    async updateExpense(id, data) {
+        data.id = id;
+        const response = await fetch(API_URL + '?action=updateExpense', {
             method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
@@ -43,15 +66,38 @@ const API = {
         const response = await fetch(`${API_URL}?action=listIncome&year=${year}`, { credentials: 'omit' });
         return await response.json();
     },
-    async createIncome(data) {
+    async createIncome(data, file) {
+        if (file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    data.fileBase64 = reader.result.split(',')[1];
+                    data.fileName = file.name;
+                    data.mimeType = file.type;
+                    try {
+                        const response = await fetch(API_URL + '?action=addIncome', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit' });
+                        resolve(await response.json());
+                    } catch(e) { reject(e); }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
         const response = await fetch(API_URL + '?action=addIncome', {
+             method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
+        });
+        return await response.json();
+    },
+    async updateIncome(id, data) {
+        data.id = id;
+        const response = await fetch(API_URL + '?action=updateIncome', {
              method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },
     async deleteIncome(id) {
         const response = await fetch(API_URL + '?action=deleteIncome', {
-             method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
+            method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit'
         });
         return await response.json();
     },

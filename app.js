@@ -28,9 +28,9 @@ let bookings = [
 document.addEventListener('DOMContentLoaded', () => {
     initYearSelectors();
     if (typeof lucide !== 'undefined') lucide.createIcons();
-    setTimeout(() => { 
+    setTimeout(() => {
         const loader = document.getElementById('loader');
-        if (loader) loader.style.display = 'none'; 
+        if (loader) loader.style.display = 'none';
     }, 1000);
 
     if (localStorage.getItem('user')) {
@@ -149,11 +149,11 @@ function renderCalendar() {
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const display = document.getElementById('current-month-display');
     if (display) display.textContent = `${monthNames[currentMonth]} ${currentYear} `;
-    
+
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     let firstDay = new Date(currentYear, currentMonth, 1).getDay();
     firstDay = (firstDay === 0) ? 6 : firstDay - 1;
-    
+
     let html = '<div class="days-grid">';
     ['L', 'M', 'X', 'J', 'V', 'S', 'D'].forEach(d => html += `<div class="day-header">${d}</div>`);
     for (let i = 0; i < firstDay; i++) html += `<div class="day-cell empty"></div>`;
@@ -192,7 +192,7 @@ function openEditBookingModal(id) {
 function deleteBooking(id) { if (confirm("¿Borrar reserva?")) { bookings = bookings.filter(b => b.id !== id); renderCalendar(); closeModal(); } }
 
 // --- EXPENSES ---
-function changeExpYear(year) { currentExpYear = year; const el = document.getElementById('exp-year-display'); if(el) el.textContent = year; renderExpenses(); }
+function changeExpYear(year) { currentExpYear = year; const el = document.getElementById('exp-year-display'); if (el) el.textContent = year; renderExpenses(); }
 
 async function renderExpenses() {
     const list = document.getElementById('expenses-body');
@@ -238,7 +238,7 @@ async function renderPersonalZone(year) {
 
     try {
         const balances = await CortijoAPI.getBalances(year);
-        
+
         if (balances.length === 0) {
             container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No se encontraron operaciones para este año.</p>';
             return;
@@ -289,10 +289,6 @@ async function renderPersonalZone(year) {
 
 function openExpenseModal() {
     const membersOpts = (cachedMembers || []).map(m => `<option value="${m}">${m}</option>`).join('');
-    if (!cachedMembers || cachedMembers.length === 0) {
-    alert("Los miembros aún no se han cargado. Espera un segundo y vuelve a intentarlo.");
-    return;
-}
     openModal('Añadir Gasto', `
         <form id="ex-form">
             <div class="form-group"><label>Concepto</label><input type="text" id="exc" placeholder="Ej: Pintura Fachada" required></div>
@@ -305,58 +301,68 @@ function openExpenseModal() {
                 <select id="exp">${membersOpts}</select>
             </div>
             <div class="form-group"><label>Notas</label><textarea id="exn"></textarea></div>
-            <button type="submit" id="exb" class="btn-primary" style="width:100%">💾 Guardar Gasto Inteligente</button>
-            <div class="form-group"> <label>Factura / Justificante (Opcional)</label> <input type="file" id="exf" accept="image/*,.pdf">
+            <div class="form-group">
+                <label>Factura / Justificante (Opcional)</label>
+                <input type="file" id="exf" accept="image/*,.pdf" style="font-size:0.8rem;">
             </div>
-            </form>
+            <button type="submit" id="exb" class="btn-primary" style="width:100%">💾 Guardar Gasto Inteligente</button>
+        </form>
     `);
 
     document.getElementById('ex-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('exb');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
+        e.preventDefault();
+        const btn = document.getElementById('exb');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
 
-    const file = document.getElementById('exf').files[0];
+        const file = document.getElementById('exf').files[0];
 
-    const data = {
-        id: Date.now(),
-        concepto: document.getElementById('exc').value,
-        cantidad: document.getElementById('exa').value,
-        fecha: document.getElementById('exd').value,
-        pagado_por: document.getElementById('exp').value,
-        notas: document.getElementById('exn').value,
-        year: currentExpYear
-    };
+        const data = {
+            id: Date.now(),
+            concepto: document.getElementById('exc').value,
+            cantidad: document.getElementById('exa').value,
+            fecha: document.getElementById('exd').value,
+            pagado_por: document.getElementById('exp').value,
+            notas: document.getElementById('exn').value,
+            year: currentExpYear
+        };
 
-    if (file) {
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-        data.fileBase64 = base64;
-        data.fileName = file.name;
-        data.mimeType = file.type || 'application/octet-stream';
-    }
+        if (file) {
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            data.fileBase64 = base64;
+            data.fileName = file.name;
+            data.mimeType = file.type || 'application/octet-stream';
+        }
 
-    await CortijoAPI.createExpense(data);
-    renderExpenses();
-    closeModal();
+        await CortijoAPI.createExpense(data);
+        renderExpenses();
+        closeModal();
     };
 }
 
 function openEditExpenseModal(id) {
     const exp = cachedExpenses.find(e => e.id == id);
-    openModal('Editar Gasto', `<form id="ee-form"><div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div><div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div><div class="form-group"><label>Pagado por</label><select id="eep"><div class="form-group"><label>Notas</label><textarea id="een">${exp.notas || ''}</textarea></div>${cachedMembers.map(m => `<option value="${m}" ${m==exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button type="submit" class="btn-primary" style="width:100%">Guardar</button></form>`);
+    openModal('Editar Gasto', `
+        <form id="ee-form">
+            <div class="form-group"><label>Concepto</label><input type="text" id="eec" value="${exp.concepto}"></div>
+            <div class="form-group"><label>Importe</label><input type="number" step="0.01" id="eea" value="${exp.cantidad}"></div>
+            <div class="form-group"><label>Pagado por</label><select id="eep">${cachedMembers.map(m => `<option value="${m}" ${m == exp.pagado_por ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Notas</label><textarea id="een">${exp.notas || ''}</textarea></div>
+            <button type="submit" class="btn-primary" style="width:100%">Guardar Cambios</button>
+        </form>`);
     document.getElementById('ee-form').onsubmit = async (e) => {
         e.preventDefault();
-        await CortijoAPI.updateExpense(id, { 
+        await CortijoAPI.updateExpense(id, {
             concepto: document.getElementById('eec').value,
             cantidad: document.getElementById('eea').value,
             pagado_por: document.getElementById('eep').value,
-            notas: document.getElementById('een').value });
+            notas: document.getElementById('een').value
+        });
         renderExpenses(); closeModal();
     };
 }
@@ -391,13 +397,15 @@ function filterIncome(query) {
         String(e.categoria).toLowerCase().includes(query.toLowerCase()) ||
         String(e.recibido_de).toLowerCase().includes(query.toLowerCase())
     );
-    
+
     let total = 0;
-    list.innerHTML = filtered.length === 0 ? 
+    list.innerHTML = filtered.length === 0 ?
         '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No se encontraron ingresos</td></tr>' :
         filtered.map(e => {
             const importe = parseFloat(e.importe) || 0;
             total += importe;
+            const catLower = String(e.categoria).toLowerCase();
+            const badgeColor = catLower.includes('aportaci') ? 'var(--primary)' : (catLower.includes('extra') ? 'var(--secondary)' : 'var(--accent)');
             return `
             <tr>
                 <td>${formatDateDisplay(e.fecha)}</td>
@@ -405,7 +413,7 @@ function filterIncome(query) {
                     <div style="font-weight:600;">${e.concepto}</div>
                     ${e.notas ? `<div style="font-size:0.75rem; color:var(--text-muted);">${e.notas}</div>` : ''}
                 </td>
-                <td><span class="badge" style="background:var(--accent); color:white; font-size:0.7rem;">${e.categoria}</span>
+                <td><span class="badge" style="background:${badgeColor}; color:white; font-size:0.7rem; font-weight:normal;">${e.categoria}</span></td>
                 <td class="amount" style="color:var(--success); font-weight:700;">+${importe.toFixed(2)}€</td>
                 <td>${e.recibido_de || '-'}</td>
                 <td>
@@ -417,7 +425,7 @@ function filterIncome(query) {
                 </td>
             </tr>`;
         }).join('');
-    
+
     const el = document.getElementById('total-income');
     if (el) el.textContent = `${total.toFixed(2)} €`;
 }
@@ -463,40 +471,40 @@ function openIncomeModal() {
     `);
 
     document.getElementById('in-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('inc-btn');
-    btn.disabled = true;
-    btn.textContent = 'Subiendo a Drive...';
+        e.preventDefault();
+        const btn = document.getElementById('inc-btn');
+        btn.disabled = true;
+        btn.textContent = 'Subiendo a Drive...';
 
-    const file = document.getElementById('inc-f').files[0];
+        const file = document.getElementById('inc-f').files[0];
 
-    const data = {
-        id: Date.now(),
-        concepto: document.getElementById('inc-c').value,
-        importe: document.getElementById('inc-a').value,
-        fecha: document.getElementById('inc-d').value,
-        categoria: document.getElementById('inc-cat').value,
-        recibido_de: document.getElementById('inc-r').value,
-        notas: document.getElementById('inc-n').value,
-        year: currentIncYear
+        const data = {
+            id: Date.now(),
+            concepto: document.getElementById('inc-c').value,
+            importe: document.getElementById('inc-a').value,
+            fecha: document.getElementById('inc-d').value,
+            categoria: document.getElementById('inc-cat').value,
+            recibido_de: document.getElementById('inc-r').value,
+            notas: document.getElementById('inc-n').value,
+            year: currentIncYear
+        };
+
+        if (file) {
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            data.fileBase64 = base64;
+            data.fileName = file.name;
+            data.mimeType = file.type || 'application/octet-stream';
+        }
+
+        await CortijoAPI.createIncome(data);
+        renderIncome();
+        closeModal();
     };
-
-    if (file) {
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-        data.fileBase64 = base64;
-        data.fileName = file.name;
-        data.mimeType = file.type || 'application/octet-stream';
-    }
-
-    await CortijoAPI.createIncome(data);
-    renderIncome();
-    closeModal();
-};
 }
 
 function openEditIncomeModal(id) {
@@ -525,6 +533,10 @@ function openEditIncomeModal(id) {
                 <label>Recibido de</label>
                 <input type="text" id="eic-r" value="${inc.recibido_de || ''}">
             </div>
+            <div class="form-group">
+                <label>Notas adicionales</label>
+                <textarea id="eic-n">${inc.notas || ''}</textarea>
+            </div>
             <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">Actualizar Ingreso</button>
         </form>
     `);
@@ -535,7 +547,8 @@ function openEditIncomeModal(id) {
             concepto: document.getElementById('eic-c').value,
             importe: document.getElementById('eic-a').value,
             categoria: document.getElementById('eic-cat').value,
-            recibido_de: document.getElementById('eic-r').value
+            recibido_de: document.getElementById('eic-r').value,
+            notas: document.getElementById('eic-n').value
         };
         await CortijoAPI.updateIncome(id, data);
         renderIncome();
@@ -561,11 +574,11 @@ function exportIncome() {
         i.recibido_de,
         i.notas || ""
     ]);
-    
-    let csvContent = "data:text/csv;charset=utf-8," + 
-        headers.join(",") + "\n" + 
+
+    let csvContent = "data:text/csv;charset=utf-8," +
+        headers.join(",") + "\n" +
         rows.map(e => e.join(",")).join("\n");
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -576,13 +589,13 @@ function exportIncome() {
 }
 
 // --- INVENTORY ---
-async function loadInventoryData() { try { cachedInventory = await CortijoAPI.getInventory(); } catch(e){} }
+async function loadInventoryData() { try { cachedInventory = await CortijoAPI.getInventory(); } catch (e) { } }
 function renderInventory() {
     const list = document.getElementById('inventory-body');
     if (!list) return;
     list.innerHTML = cachedInventory.map(i => `<tr><td><img src="${getDriveDirectLink(i.foto_url)}" style="width:40px;height:40px;border-radius:4px;"></td><td>${i.articulo}</td><td>${i.categoria}</td><td>${i.cantidad}</td><td>${i.estado}</td><td>${i.ubicacion}</td><td><button class="btn-icon" onclick="deleteInventoryItem(${i.id})">🗑️</button></td></tr>`).join('');
 }
-async function deleteInventoryItem(id) { if(confirm("¿Borrar?")) { await CortijoAPI.deleteInventory(id); loadInventoryData().then(() => renderInventory()); } }
+async function deleteInventoryItem(id) { if (confirm("¿Borrar?")) { await CortijoAPI.deleteInventory(id); loadInventoryData().then(() => renderInventory()); } }
 
 // --- DOCUMENTS ---
 function changeDocYear(year) { currentDocYear = year; renderDocuments(); }
@@ -592,7 +605,7 @@ async function renderDocuments() {
     try {
         const data = await CortijoAPI.getDocuments(currentDocYear);
         list.innerHTML = data.map(d => `<div class="document-item"><span>📄</span><h4>${d.name}</h4><button class="btn-small" onclick="window.open('${d.url_drive}', '_blank')">Ver</button></div>`).join('');
-    } catch(e){}
+    } catch (e) { }
 }
 async function handleFileUpload(event) {
     const file = event.target.files[0];
@@ -612,7 +625,7 @@ async function renderTasks() {
             const card = document.createElement('div'); card.className = 'task-card'; card.innerHTML = `<strong>${t.title}</strong><br><small>${t.priority}</small>`;
             if (lists[t.status]) lists[t.status].appendChild(card);
         });
-    } catch(e){}
+    } catch (e) { }
 }
 
 // --- AUTH & UI ---
@@ -639,11 +652,11 @@ async function showAuthenticatedUI() {
     ['private-nav', 'user-info', 'mobile-menu-btn'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
     document.getElementById('user-name').textContent = currentUser.name;
     document.getElementById('user-avatar').src = currentUser.avatar;
-    
+
     try {
         cachedMembers = await CortijoAPI.getConfiguracion();
-    } catch(e) {
-        cachedMembers = ["Antonio", "Jorge", "Raquel", "Rebeca", "Tete", "Angelita"]; 
+    } catch (e) {
+        cachedMembers = ["Antonio", "Jorge", "Raquel", "Rebeca", "Tete", "Angelita"];
     }
 
     showSection('calendar');
