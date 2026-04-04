@@ -235,57 +235,53 @@ async function renderPersonalZone(year) {
     const globalContainer = document.getElementById('resumen-global-container');
     if (!tableContainer || !globalContainer) return;
 
-    tableContainer.innerHTML = '<p style="text-align:center;">Sincronizando balances con el motor central...</p>';
+    tableContainer.innerHTML = '<p style="text-align:center;">Sincronizando la Bóveda de Reparto...</p>';
     globalContainer.innerHTML = '';
 
     try {
-        const balances = await CortijoAPI.getBalances(year);
+        const [pagos, teorico, ingresosData] = await Promise.all([
+            CortijoAPI.getOrdenPagos(year),
+            CortijoAPI.getRepartoTeorico(year),
+            CortijoAPI.getIncome(year)
+        ]);
 
-        if (balances.length === 0) {
-            tableContainer.innerHTML = '<p style="text-align:center;">No se encontraron operaciones para este año.</p>';
+        if (pagos.length === 0) {
+            tableContainer.innerHTML = '<p style="text-align:center; padding: 2rem;">No hay operaciones avanzadas registradas. Añade nuevos gastos o transferencias primero.</p>';
             return;
         }
 
-        let totalGastos = 0;
-        let totalIngresos = 0;
+        const totalGastos = teorico.length > 0 ? parseFloat(teorico[0].totalgastosaño || 0) : 0;
+        const totalIngresos = ingresosData.reduce((s,i) => s + parseFloat(i.importe||0), 0);
+        const resultado = totalIngresos - totalGastos;
         
-        const trs = balances.map(b => {
-            const gastos = parseFloat(b.gastos) || 0;
-            const ingresos = parseFloat(b.ingresos) || 0;
+        const trs = pagos.map(p => {
+            const gastoNeto = parseFloat(p.gastoneto) || 0;
+            const parte = parseFloat(p.parteteorica) || 0;
+            const dif = parseFloat(p.diferencia) || 0;
             
-            // Atencion: totalIngresos y TotalGastos deben ser acumulativos
-            // Pero en backend.gs estos registros vienen desglosados únicos por persona, el sum sumará el total real.
-            totalGastos += gastos;
-            totalIngresos += ingresos;
-            
-            const parte = parseFloat(b.parte) || 0;
-            const saldo = parseFloat(b.saldo) || 0;
-            
-            const isOwe = saldo < -0.01;
-            const isReceive = saldo > 0.01;
+            const isOwe = dif > 0.01;
+            const isReceive = dif < -0.01;
             
             let saldoText, bgClass;
             if (isOwe) {
-                saldoText = `Debe pagar ${Math.abs(saldo).toFixed(2)}€`;
-                bgClass = 'color: #ef4444; font-weight: bold;'; // Rojo puro (Tailwind red-500)
+                saldoText = `Debe pagar ${dif.toFixed(2)}€`;
+                bgClass = 'color: #ef4444; font-weight: bold;'; 
             } else if (isReceive) {
-                // Azul solicitado por el usuario
-                saldoText = `Debe recibir ${Math.abs(saldo).toFixed(2)}€`;
-                bgClass = 'color: #3b82f6; font-weight: bold;'; // Azul puro (Tailwind blue-500)
+                saldoText = `Debe recibir ${Math.abs(dif).toFixed(2)}€`;
+                bgClass = 'color: #3b82f6; font-weight: bold;'; 
             } else {
                 saldoText = `Cuentas al día`;
-                bgClass = 'color: #9ca3af;'; // Gris (Tailwind gray-400)
+                bgClass = 'color: #9ca3af;'; 
             }
             
             return `<tr style="border-bottom:1px solid var(--border);">
-                <td style="padding:12px;"><strong>${b.nombre}</strong></td>
+                <td style="padding:12px;"><strong>${p.persona}</strong></td>
                 <td style="padding:12px;">${parte.toFixed(2)}€</td>
-                <td style="padding:12px;">${ingresos.toFixed(2)}€</td>
+                <td style="padding:12px;">${gastoNeto.toFixed(2)}€</td>
                 <td style="padding:12px; ${bgClass}">${saldoText}</td>
             </tr>`;
         }).join('');
 
-        const resultado = totalIngresos - totalGastos;
         const resText = resultado >= 0 ? `+${resultado.toFixed(2)}€` : `${resultado.toFixed(2)}€`;
         const resColor = resultado >= 0 ? 'var(--success)' : 'var(--danger)';
 
@@ -319,7 +315,7 @@ async function renderPersonalZone(year) {
         `;
 
     } catch (error) {
-        tableContainer.innerHTML = '<p style="color:var(--danger); text-align:center;">Error conectando con la Bóveda Central de Balances.</p>';
+        tableContainer.innerHTML = '<p style="color:var(--danger); text-align:center;">Error conectando con la Bóveda Central.</p>';
         console.error("Error en Balances V3:", error);
     }
 }
@@ -796,26 +792,38 @@ async function loadAuditLog() {
     if (container) container.innerHTML = data.map(r => `<div style="font-size:0.8rem;">${r.timestamp}: ${r.accion}</div>`).join('');
 }
 
-// --- REPARTO AVANZADO (ADMINISTRADOR) ---
-function openTransferenciasModal() {
+// --- REPARTO AVANZADO & TRANSFERENCIAS ---
+async function confirmarBorrarTransferencia(id) {
+    if(confirm("¿Eliminar bizum/transferencia?")) {
+        const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
+        await CortijoAPI.deleteTransferencia(id, year);
+        openAvanzadoModal('transferencias');
+        renderPersonalZone(year);
+    }
+}
+
+function openAddTransferenciaModal() {
     const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
     const membersOpts = (cachedMembers || []).map(m => `<option value="${m}">${m}</option>`).join('');
-    openModal('Añadir Transferencia Externa', `
+    openModal('Añadir Transferencia (BIZUM)', `
         <form id="transf-form">
             <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div class="form-group"><label>Origen (De)</label><select id="tr-de">${membersOpts}</select></div>
-                <div class="form-group"><label>Destino (Para)</label><select id="tr-a">${membersOpts}</select></div>
+                <div class="form-group"><label>Origen (Sale de)</label><select id="tr-de">${membersOpts}</select></div>
+                <div class="form-group"><label>Destino (Llega a)</label><select id="tr-a">${membersOpts}</select></div>
             </div>
-            <div class="form-group"><label>Importe (€)</label><input type="number" step="0.01" id="tr-imp" required></div>
+            <div class="form-group"><label>Importe (€) o Bizum</label><input type="number" step="0.01" id="tr-imp" required></div>
             <div class="form-group"><label>Fecha</label><input type="date" id="tr-f" value="${new Date().toISOString().split('T')[0]}" required></div>
-            <button type="submit" id="tr-btn" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Transferencia</button>
+            <div class="form-group"><label>Captura de Pantalla/Justificante</label><input type="file" id="tr-file" accept="image/*,.pdf"></div>
+            <button type="submit" id="tr-btn" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Bizum</button>
         </form>
     `);
     document.getElementById('transf-form').onsubmit = async (e) => {
         e.preventDefault();
-        document.getElementById('tr-btn').disabled = true;
-        document.getElementById('tr-btn').textContent = 'Guardando...';
-        await CortijoAPI.createTransferencia({
+        const btn = document.getElementById('tr-btn');
+        btn.disabled = true;
+        btn.textContent = 'Subiendo a Drive y Registrando...';
+        
+        const data = {
              id: 'TRF-' + Date.now().toString().substring(8),
              fecha: document.getElementById('tr-f').value,
              de: document.getElementById('tr-de').value,
@@ -823,17 +831,36 @@ function openTransferenciasModal() {
              importe: document.getElementById('tr-imp').value,
              year: year,
              timestamp: new Date().toLocaleString()
-        });
-        closeModal();
+        };
+        const file = document.getElementById('tr-file').files[0];
+        if (file) {
+            data.fileBase64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result.split(',')[1]); r.readAsDataURL(file); });
+            data.fileName = file.name;
+            data.mimeType = file.type;
+        }
+
+        await CortijoAPI.createTransferencia(data);
+        openAvanzadoModal('transferencias');
+        renderPersonalZone(year);
     };
 }
 
 async function openAvanzadoModal(type) {
     const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
-    openModal('Cargando Datos...', '<div style="text-align:center; padding: 2rem;">Conectando con la Bóveda Avanzada...</div>');
+    openModal('Cargando...', '<div style="text-align:center; padding: 2rem;">Buscando expedientes y justificantes en la nube...</div>');
     try {
-        let title = ''; let ths = ''; let trs = '';
-        if (type === 'gastoNeto') {
+        let title = ''; let ths = ''; let trs = ''; let actionHtml = '';
+        
+        if (type === 'transferencias') {
+            title = 'Transferencias y Bizums (' + year + ')';
+            ths = '<th>Fecha</th><th>De</th><th>A</th><th>Importe</th><th>Justificante</th><th>Acción</th>';
+            actionHtml = '<button class="btn-primary" style="margin-bottom:15px; width:100%;" onclick="openAddTransferenciaModal()">+ Nueva Transferencia o Bizum</button>';
+            const data = await CortijoAPI.getTransferencias(year);
+            trs = data.map(r => {
+                 let driveLink = r.url_drive ? `<a href="${r.url_drive}" target="_blank" style="text-decoration:none; font-size:1.2rem;">📎 Ver</a>` : '-';
+                 return `<tr><td>${formatDateDisplay(r.fecha)}</td><td>${r.de}</td><td>${r.a}</td><td style="font-weight:bold">${(parseFloat(r.importe)||0).toFixed(2)}€</td><td>${driveLink}</td><td><button class="btn-icon" onclick="confirmarBorrarTransferencia('${r.id}')">🗑️</button></td></tr>`;
+            }).join('');
+        } else if (type === 'gastoNeto') {
             title = 'Gasto Neto (' + year + ')';
             ths = '<th>Persona</th><th>Gastos Base</th><th>Da a otros</th><th>Recibe de otros</th><th>Gasto Neto</th>';
             const data = await CortijoAPI.getGastoNeto(year);
@@ -857,16 +884,17 @@ async function openAvanzadoModal(type) {
         }
         
         openModal(title, `
-             <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+             ${actionHtml}
+             <div class="table-container" style="max-height: 55vh; overflow-y: auto;">
                  <table style="width:100%; border-collapse:collapse; background:white; font-size:0.85rem;">
-                     <thead style="background:var(--bg-card); position:sticky; top:0;">
+                     <thead style="background:var(--bg-card); position:sticky; top:0; z-index:2;">
                          <tr>${ths}</tr>
                      </thead>
-                     <tbody style="text-align:center;">${trs || '<tr><td colspan="5">No hay cálculos guardados. Sube un gasto o transferencia.</td></tr>'}</tbody>
+                     <tbody style="text-align:center;">${trs || '<tr><td colspan="6">No hay datos en esta modalidad para este año.</td></tr>'}</tbody>
                  </table>
              </div>
         `);
     } catch (e) {
-        openModal('Error de Conexión', '<p style="color:var(--danger); padding:2rem; text-align:center;">No se encontró el reporte avanzado. Asegúrate de actualizar el backend y esperar a la sincronización.</p>');
+        openModal('Error de Conexión', '<p style="color:var(--danger); padding:2rem; text-align:center;">No se pudo conectar. Actualiza el backend en Apps Script.</p>');
     }
 }

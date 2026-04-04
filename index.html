@@ -97,21 +97,21 @@
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Auditoría matemática detallada. Vista habilitada para examinar todo el trazado de pagos cruzados (incluyendo transferencias externas directas y porcentajes por escritura).</p>
                 
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                    <button class="btn-secondary" onclick="openAvanzadoModal('gastoNeto')" style="text-align:left; padding: 15px;">
+                    <button class="btn-secondary" onclick="openAvanzadoModal('gastoNeto')" style="text-align:left; padding: 15px; display:none;">
                         <span style="display:block; font-weight:bold; font-size:1rem; margin-bottom:5px;">1. Gasto Neto Soportado</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Ver pagos directos deduciendo las transferencias hechas</span>
                     </button>
-                    <button class="btn-secondary" onclick="openAvanzadoModal('teorico')" style="text-align:left; padding: 15px;">
+                    <button class="btn-secondary" onclick="openAvanzadoModal('teorico')" style="text-align:left; padding: 15px; display:none;">
                         <span style="display:block; font-weight:bold; font-size:1rem; margin-bottom:5px;">2. Reparto Teórico según %</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Ver a qué cantidad está obligado cada miembro por escritura</span>
                     </button>
-                    <button class="btn-primary" onclick="openAvanzadoModal('orden')" style="text-align:left; padding: 15px;">
+                    <button class="btn-primary" onclick="openAvanzadoModal('orden')" style="text-align:left; padding: 15px; display:none;">
                         <span style="display:block; font-weight:bold; font-size:1rem; margin-bottom:5px;">3. Diferencias y Orden de Pagos</span>
                         <span style="font-size:0.75rem; color:rgba(255,255,255,0.8); font-weight:normal;">Balance estricto (Lo que soporta vs Lo que le toca)</span>
                     </button>
-                    <button class="btn-primary" onclick="openTransferenciasModal()" style="text-align:left; padding: 15px; background-color: var(--accent);">
-                        <span style="display:block; font-weight:bold; font-size:1rem; margin-bottom:5px;">4. Transferencias entre Partes</span>
-                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.8); font-weight:normal;">Añadir registro de dinero enviado directamente a otra familia</span>
+                    <button class="btn-primary" onclick="openAvanzadoModal('transferencias')" style="text-align:left; padding: 15px; background-color: var(--accent);">
+                        <span style="display:block; font-weight:bold; font-size:1rem; margin-bottom:5px;">Transferencias y Bizums</span>
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.8); font-weight:normal;">Gestión de pagos directos enviados a otra familia con justificantes</span>
                     </button>
                 </div>
             </div>
