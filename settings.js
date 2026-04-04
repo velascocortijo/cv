@@ -1,4 +1,4 @@
-// VERSION: V3.0.0 - Settings Slim
+// VERSION: V3.1.0 - Settings Slim + Modulo Administrador
 /**
  * Toda la configuración de familias y porcentajes ha sido movida a Google Sheets (Hoja: Configuracion).
  * Este archivo ahora solo retiene credenciales básicas del frontend.

@@ -81,6 +81,17 @@
             <div id="personal-zone-container" class="personal-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-top:20px;">
                 <!-- JavaScript inyectará las tarjetas aquí -->
             </div>
+            
+            <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <h3>Reparto Avanzado</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Vista de control exhaustivo para administradores. Desglose matemático cruzando gastos de app, transferencias directas y % de cortijo.</p>
+                <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-secondary" onclick="openAvanzadoModal('gastoNeto')">1. Gasto Neto Soportado</button>
+                    <button class="btn-secondary" onclick="openAvanzadoModal('teorico')">2. Reparto Teórico según %</button>
+                    <button class="btn-primary" onclick="openAvanzadoModal('orden')">3. Diferencias y Orden de Pagos</button>
+                    <button class="btn-primary" onclick="openTransferenciasModal()" style="background-color: var(--accent);">+ Añadir Transferencia Externa</button>
+                </div>
+            </div>
         </section>
 
         <!-- SECCIONES PÚBLICAS -->

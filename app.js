@@ -758,3 +758,78 @@ async function loadAuditLog() {
     const container = document.getElementById('audit-log-container');
     if (container) container.innerHTML = data.map(r => `<div style="font-size:0.8rem;">${r.timestamp}: ${r.accion}</div>`).join('');
 }
+
+// --- REPARTO AVANZADO (ADMINISTRADOR) ---
+function openTransferenciasModal() {
+    const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
+    const membersOpts = (cachedMembers || []).map(m => `<option value="${m}">${m}</option>`).join('');
+    openModal('Añadir Transferencia Externa', `
+        <form id="transf-form">
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Origen (De)</label><select id="tr-de">${membersOpts}</select></div>
+                <div class="form-group"><label>Destino (Para)</label><select id="tr-a">${membersOpts}</select></div>
+            </div>
+            <div class="form-group"><label>Importe (€)</label><input type="number" step="0.01" id="tr-imp" required></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="tr-f" value="${new Date().toISOString().split('T')[0]}" required></div>
+            <button type="submit" id="tr-btn" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Transferencia</button>
+        </form>
+    `);
+    document.getElementById('transf-form').onsubmit = async (e) => {
+        e.preventDefault();
+        document.getElementById('tr-btn').disabled = true;
+        document.getElementById('tr-btn').textContent = 'Guardando...';
+        await CortijoAPI.createTransferencia({
+             id: 'TRF-' + Date.now().toString().substring(8),
+             fecha: document.getElementById('tr-f').value,
+             de: document.getElementById('tr-de').value,
+             a: document.getElementById('tr-a').value,
+             importe: document.getElementById('tr-imp').value,
+             year: year,
+             timestamp: new Date().toLocaleString()
+        });
+        closeModal();
+    };
+}
+
+async function openAvanzadoModal(type) {
+    const year = document.getElementById('split-year-select')?.value || new Date().getFullYear();
+    openModal('Cargando Datos...', '<div style="text-align:center; padding: 2rem;">Conectando con la Bóveda Avanzada...</div>');
+    try {
+        let title = ''; let ths = ''; let trs = '';
+        if (type === 'gastoNeto') {
+            title = 'Gasto Neto (' + year + ')';
+            ths = '<th>Persona</th><th>Gastos Base</th><th>Da a otros</th><th>Recibe de otros</th><th>Gasto Neto</th>';
+            const data = await CortijoAPI.getGastoNeto(year);
+            trs = data.map(r => `<tr><td>${r.persona}</td><td>${(parseFloat(r.gastospagados)||0).toFixed(2)}€</td><td style="color:var(--danger)">-${(parseFloat(r.transferenciassalientes)||0).toFixed(2)}€</td><td style="color:var(--success)">+${(parseFloat(r.transferenciasentrantes)||0).toFixed(2)}€</td><td style="font-weight:bold">${(parseFloat(r.gastoneto)||0).toFixed(2)}€</td></tr>`).join('');
+        } else if (type === 'teorico') {
+            title = 'Reparto Teórico (' + year + ')';
+            ths = '<th>Persona</th><th>% Operativo</th><th>Gastos Globales</th><th>Parte Teórica</th>';
+            const data = await CortijoAPI.getRepartoTeorico(year);
+            trs = data.map(r => `<tr><td>${r.persona}</td><td>${r.porcentajeoperativo}%</td><td>${(parseFloat(r.totalgastosaño)||0).toFixed(2)}€</td><td style="font-weight:bold">${(parseFloat(r.parteteorica)||0).toFixed(2)}€</td></tr>`).join('');
+        } else if (type === 'orden') {
+            title = 'Orden de Pagos (' + year + ')';
+            ths = '<th>Persona</th><th>Neto Actual</th><th>Neto Teórico</th><th>Estado</th>';
+            const data = await CortijoAPI.getOrdenPagos(year);
+            trs = data.map(r => {
+                let dif = parseFloat(r.diferencia)||0;
+                let estado = dif > 0.01 ? `<span style="color:var(--danger); font-weight:bold;">Debe Pagar ${dif.toFixed(2)}€</span>` : 
+                            (dif < -0.01 ? `<span style="color:var(--success); font-weight:bold;">Debe Recibir ${Math.abs(dif).toFixed(2)}€</span>` : 
+                                           `<span style="color:var(--text-muted);">Cuadrado al céntimo</span>`);
+                return `<tr><td>${r.persona}</td><td>${(parseFloat(r.gastoneto)||0).toFixed(2)}€</td><td>${(parseFloat(r.parteteorica)||0).toFixed(2)}€</td><td>${estado}</td></tr>`;
+            }).join('');
+        }
+        
+        openModal(title, `
+             <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+                 <table style="width:100%; border-collapse:collapse; background:white; font-size:0.85rem;">
+                     <thead style="background:var(--bg-card); position:sticky; top:0;">
+                         <tr>${ths}</tr>
+                     </thead>
+                     <tbody style="text-align:center;">${trs || '<tr><td colspan="5">No hay cálculos guardados. Sube un gasto o transferencia.</td></tr>'}</tbody>
+                 </table>
+             </div>
+        `);
+    } catch (e) {
+        openModal('Error de Conexión', '<p style="color:var(--danger); padding:2rem; text-align:center;">No se encontró el reporte avanzado. Asegúrate de actualizar el backend y esperar a la sincronización.</p>');
+    }
+}
