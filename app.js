@@ -410,6 +410,7 @@ function openExpenseModal() {
 
         await CortijoAPI.createExpense(data);
         renderExpenses();
+        renderPersonalZone(currentYear); // <--- Refresco de Zona 1
         closeModal();
     };
 }
@@ -561,6 +562,7 @@ function openIncomeModal() {
 
         await CortijoAPI.createIncome(data, file);
         renderIncome();
+        renderPersonalZone(currentYear); // <--- Refresco de Zona 1
         closeModal();
     };
 }
