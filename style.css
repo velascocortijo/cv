@@ -993,7 +993,7 @@ td {
 /* SECCIONES PÚBLICAS */
 .hero {
     height: 60vh;
-    background: url('https://raw.githubusercontent.com/velascocortijo/cv/refs/heads/main/hero.jpg?auto=format&fit=crop&q=80&w=2000') center/cover no-repeat;
+    background: url('https://raw.githubusercontent.com/velascocortijo/cv/refs/heads/main/hero.jpg') center/cover no-repeat;
     border-radius: 20px;
     position: relative;
     overflow: hidden;
