@@ -759,7 +759,7 @@ async function renderDocuments() {
                        👁️ Ver
                    </button>
                    <button style="background:transparent; border:none; padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="openEditDocNameModal('${d.id}')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
-                       ✏️ Nombrar
+                       ✏️ Renombrar
                    </button>
                 </div>
             </div>`;
@@ -768,21 +768,28 @@ async function renderDocuments() {
 }
 
 function handleFileUpload(event) {
-    if (event) event.preventDefault();
-    openModal('Subir Documento', `
-       <form id="doc-form">
-           <div class="form-group"><label>Archivo</label><input type="file" id="docfile" required></div>
-           <div class="form-group"><label>Nombre del Documento (Opcional)</label><input type="text" id="docn" placeholder="Dejar en blanco para usar nombre original"></div>
-           <button type="submit" id="docbtn" class="btn-primary" style="width:100%">Subir Documento al Cortijo</button>
+    const file = event.target.files[0];
+    if (!file) return;
+
+    openModal('Finalizar Subida', `
+       <form id="doc-form" style="text-align:left;">
+           <div class="form-group" style="background:var(--bg-main); padding:10px; border-radius:8px; margin-bottom:15px; border:1px dashed var(--primary);">
+               <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">Archivo seleccionado:</p>
+               <strong style="font-size:0.95rem; color:var(--primary);">${file.name}</strong>
+           </div>
+           <div class="form-group">
+               <label>Nombre del Documento (Cómo se verá en la lista)</label>
+               <input type="text" id="docn" value="${file.name.split('.')[0]}" required>
+           </div>
+           <button type="submit" id="docbtn" class="btn-primary" style="width:100%; margin-top:10px;">💾 Guardar en el Cortijo</button>
        </form>
     `);
     
     document.getElementById('doc-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('docbtn');
-        btn.disabled = true; btn.textContent = 'Subiendo al Drive y Registrando...';
+        btn.disabled = true; btn.textContent = 'Subiendo al Drive familiar...';
         
-        const file = document.getElementById('docfile').files[0];
         let name = document.getElementById('docn').value.trim();
         if (!name) name = file.name.split('.')[0];
         
@@ -794,6 +801,9 @@ function handleFileUpload(event) {
             year: currentDocYear, 
             date: new Date().toISOString() 
         }, file);
+        
+        // Limpiar el input hidden para permitir subir el mismo archivo después si se desea
+        event.target.value = '';
         renderDocuments();
         closeModal();
     };
@@ -802,10 +812,10 @@ function handleFileUpload(event) {
 function openEditDocNameModal(id) {
     const doc = cachedDocs.find(d => d.id == id);
     if (!doc) return;
-    openModal('Nombrar Documento', `
+    openModal('Renombrar Documento', `
         <form id="doc-edit-form">
-            <div class="form-group"><label>Nombre</label><input type="text" id="edocn" value="${doc.name}" required></div>
-            <button type="submit" id="edocbtn" class="btn-primary" style="width:100%">Guardar Cambios</button>
+            <div class="form-group"><label>Nuevo Nombre para el Documento</label><input type="text" id="edocn" value="${doc.name}" required></div>
+            <button type="submit" id="edocbtn" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Cambios</button>
         </form>
     `);
     document.getElementById('doc-edit-form').onsubmit = async (e) => {
