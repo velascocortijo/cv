@@ -754,12 +754,15 @@ async function renderDocuments() {
                    <p style="margin:8px 0 0 0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">${ext.toUpperCase()} • ${d.size}</p>
                    <p style="margin:4px 0 0 0; font-size:0.7rem; color:var(--text-muted);">${formatDateDisplay(d.date || d.timestamp)}</p>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--border); background:var(--bg-card);">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid var(--border); background:var(--bg-card);">
                    <button style="background:transparent; border:none; border-right:1px solid var(--border); padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="window.open('${d.url_drive}', '_blank')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
                        👁️ Ver
                    </button>
-                   <button style="background:transparent; border:none; padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="openEditDocNameModal('${d.id}')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
+                   <button style="background:transparent; border:none; border-right:1px solid var(--border); padding:0.75rem; color:var(--text-main); font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="openEditDocNameModal('${d.id}')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
                        ✏️ Renombrar
+                   </button>
+                   <button style="background:transparent; border:none; padding:0.75rem; color:#ef4444; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;" onclick="confirmDeleteDoc('${d.id}')" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='transparent'">
+                       🗑️ Borrar
                    </button>
                 </div>
             </div>`;
@@ -826,6 +829,13 @@ function openEditDocNameModal(id) {
         renderDocuments();
         closeModal();
     };
+}
+
+async function confirmDeleteDoc(id) {
+    if (confirm("¿Seguro que quieres quitar este documento de la lista?\n\nNota: El archivo físico NO se borrará de tu Google Drive por seguridad.")) {
+        await CortijoAPI.deleteDoc(id);
+        renderDocuments();
+    }
 }
 
 // --- TASKS ---
