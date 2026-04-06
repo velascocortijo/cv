@@ -1,5 +1,5 @@
 // VERSION: V3.0.0 - Cliente API Single Source of Truth
-const API_URL = 'https://script.google.com/macros/s/AKfycbwitq9Rz5A-k7lxqFE7SPPRziunZTA8bVD88xrwD7vEL_XD9r-Z0NplWVMgWRc0HGsU/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxdFtYAA9dnLEvcLSkcl06pBW5uhlH_xtT76fdnzm18Z1Ssjx06-YlkGIn6t31sCbnp/exec';
 
 const API = {
     // --- AUTENTICACIÓN ---
@@ -141,6 +141,11 @@ const API = {
                 reader.readAsDataURL(file);
             });
         }
+    },
+    async updateDoc(id, data) {
+        data.id = id;
+        const response = await fetch(API_URL + '?action=updateDoc', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit' });
+        return await response.json();
     },
     // --- REPARTO AVANZADO ---
     async getTransferencias(year) {
