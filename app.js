@@ -25,7 +25,7 @@ let bookings = [
 ];
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initYearSelectors();
     if (typeof lucide !== 'undefined') lucide.createIcons();
     setTimeout(() => {
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (localStorage.getItem('user')) {
         currentUser = JSON.parse(localStorage.getItem('user'));
-        showAuthenticatedUI();
+        await showAuthenticatedUI();
         // Restaurar sección previa tras login automático
         if (savedSection !== 'home') showSection(savedSection);
     } else {
@@ -962,8 +962,6 @@ async function showAuthenticatedUI() {
     } catch (e) {
         cachedMembers = ["Antonio", "Jorge", "Raquel", "Rebeca", "Tete", "Angelita"];
     }
-
-    showSection('calendar');
 }
 
 function signOut() { localStorage.removeItem('user'); location.reload(); }
