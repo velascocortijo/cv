@@ -38,8 +38,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (localStorage.getItem('user')) {
         currentUser = JSON.parse(localStorage.getItem('user'));
         await showAuthenticatedUI();
-        // Restaurar sección previa tras login automático
-        if (savedSection !== 'home') showSection(savedSection);
+        
+        // Si estamos logueados y la web intenta ir a 'home', forzamos 'calendar' como área de trabajo por defecto
+        const finalSection = (savedSection === 'home' || !savedSection) ? 'calendar' : savedSection;
+        showSection(finalSection);
     } else {
         showSection('home');
         initAuth(); // Inicializar Google Identity si no hay sesión
@@ -99,11 +101,18 @@ function showSection(sectionId) {
     // Persistencia de sección
     localStorage.setItem('activeSection', sectionId);
 
-    // Gestión del HERO: solo mostrar en la Home o si explícito
-    const hero = document.getElementById('hero-section');
+    // Gestión del HERO: ocultar explícitamente si no hay home o si es privado
+    const hero = document.getElementById('login-section');
     if (hero) {
-        if (sectionId === 'home') hero.classList.remove('hidden');
-        else hero.classList.add('hidden');
+        if (sectionId === 'home') hero.classList.add('hidden'); // En Home el login no se ve
+        // Si se llama manual showLogin(), éste ya lo maneja
+    }
+
+    // El Home original también se oculta si sectionId != home
+    const home = document.getElementById('home-section');
+    if (home) {
+        if (sectionId === 'home') home.classList.remove('hidden');
+        else home.classList.add('hidden');
     }
 
     // Deactivate all buttons in both navs
