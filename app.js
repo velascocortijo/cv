@@ -33,9 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loader) loader.style.display = 'none';
     }, 1000);
 
+    const savedSection = localStorage.getItem('activeSection') || 'home';
+
     if (localStorage.getItem('user')) {
         currentUser = JSON.parse(localStorage.getItem('user'));
         showAuthenticatedUI();
+        // Restaurar sección previa tras login automático
+        if (savedSection !== 'home') showSection(savedSection);
     } else {
         showSection('home');
         initAuth(); // Inicializar Google Identity si no hay sesión
@@ -91,6 +95,16 @@ function showSection(sectionId) {
     document.querySelectorAll('.content-section, .hero-section').forEach(s => s.classList.add('hidden'));
     const target = document.getElementById(sectionId + '-section') || document.getElementById(sectionId);
     if (target) target.classList.remove('hidden');
+
+    // Persistencia de sección
+    localStorage.setItem('activeSection', sectionId);
+
+    // Gestión del HERO: solo mostrar en la Home o si explícito
+    const hero = document.getElementById('hero-section');
+    if (hero) {
+        if (sectionId === 'home') hero.classList.remove('hidden');
+        else hero.classList.add('hidden');
+    }
 
     // Deactivate all buttons in both navs
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -431,13 +445,22 @@ function openEditExpenseModal(id) {
             concepto: document.getElementById('eec').value,
             cantidad: document.getElementById('eea').value,
             pagado_por: document.getElementById('eep').value,
-            notas: document.getElementById('een').value
+            notas: document.getElementById('een').value,
+            year: currentExpYear
         });
-        renderExpenses(); closeModal();
+        renderExpenses();
+        renderPersonalZone(currentExpYear);
+        closeModal();
     };
 }
 
-async function confirmDeleteExpense(id) { if (confirm("¿Eliminar?")) { await CortijoAPI.deleteExpense(id); renderExpenses(); } }
+async function confirmDeleteExpense(id) { 
+    if (confirm("¿Estás seguro de eliminar este gasto?\nSe recalcularán todos los balances automáticamente.")) { 
+        await CortijoAPI.deleteExpense(id, currentExpYear); 
+        renderExpenses(); 
+        renderPersonalZone(currentExpYear);
+    } 
+}
 
 // --- INCOME ---
 function changeIncYear(year) {
@@ -617,9 +640,10 @@ function openEditIncomeModal(id) {
 }
 
 async function confirmDeleteIncome(id) {
-    if (confirm("¿Estás seguro de que deseas eliminar este ingreso? Esta acción no se puede deshacer.")) {
-        await CortijoAPI.deleteIncome(id);
+    if (confirm("¿Estás seguro de que deseas eliminar este ingreso? Se recalcularán los balances.")) {
+        await CortijoAPI.deleteIncome(id, currentIncYear);
         renderIncome();
+        renderPersonalZone(currentYear);
     }
 }
 
@@ -661,10 +685,51 @@ function renderInventory() {
         <td>${i.estado}</td>
         <td style="font-weight:bold;">${i.precio ? parseFloat(i.precio).toFixed(2) + '€' : '-'}</td>
         <td>${i.ubicacion}</td>
-        <td><button class="btn-icon" onclick="deleteInventoryItem('${i.id}')">🗑️</button></td>
+        <td>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-icon" onclick="openEditInventoryModal('${i.id}')" title="Editar">✏️</button>
+                <button class="btn-icon" onclick="deleteInventoryItem('${i.id}')" title="Borrar">🗑️</button>
+            </div>
+        </td>
     </tr>`).join('');
 }
-async function deleteInventoryItem(id) { if (confirm("¿Borrar?")) { await CortijoAPI.deleteInventory(id); loadInventoryData().then(() => renderInventory()); } }
+async function deleteInventoryItem(id) { 
+    if (confirm("¿Estás seguro de eliminar este artículo del inventario?")) { 
+        await CortijoAPI.deleteInventory(id); 
+        loadInventoryData().then(() => renderInventory()); 
+    } 
+}
+
+function openEditInventoryModal(id) {
+    const i = cachedInventory.find(item => item.id == id);
+    if (!i) return;
+    openModal('Editar Artículo', `
+        <form id="einv-form">
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Artículo</label><input type="text" id="einva" value="${i.articulo}" required></div>
+                <div class="form-group"><label>Marca / Modelo</label><input type="text" id="einvm" value="${i.marca_modelo||''}"></div>
+            </div>
+            <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-group"><label>Cantidad</label><input type="number" id="einvq" value="${i.cantidad}" required></div>
+                <div class="form-group"><label>Ubicación</label><input type="text" id="einvu" value="${i.ubicacion||''}"></div>
+            </div>
+            <div class="form-group"><label>Precio (€)</label><input type="number" step="0.01" id="einvp" value="${i.precio||''}"></div>
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">Guardar Cambios</button>
+        </form>
+    `);
+    document.getElementById('einv-form').onsubmit = async (e) => {
+        e.preventDefault();
+        await CortijoAPI.updateInventory(id, {
+            articulo: document.getElementById('einva').value,
+            marca_modelo: document.getElementById('einvm').value,
+            cantidad: document.getElementById('einvq').value,
+            ubicacion: document.getElementById('einvu').value,
+            precio: document.getElementById('einvp').value
+        });
+        loadInventoryData().then(() => renderInventory());
+        closeModal();
+    };
+}
 function openInventoryModal() {
     openModal('Añadir Inventario', `
         <form id="inv-form">
