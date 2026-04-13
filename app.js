@@ -945,7 +945,7 @@ async function renderTasks() {
 function initAuth() {
     if (typeof google === 'undefined') return;
     google.accounts.id.initialize({
-        client_id: window.CONFIG?.GOOGLE_CLIENT_ID || '991206649735-8h0psdve7tkhpghr6g8e55e5u5r2dkhl.apps.googleusercontent.com',
+        client_id: window.CONFIG?.GOOGLE_CLIENT_ID || '699107819652-19skv1kl2iu531qqoigpdd91jt9c26gj.apps.googleusercontent.com',
         callback: handleCredentialResponse
     });
 }
